@@ -8,6 +8,7 @@
 | **导入压缩包** | 资料库的 **+** 菜单 →「导入压缩包（zip 或 7z）」。程序解压到 `C:\Programs\<名称>`，只有一个主程序时自动加入资料库，否则列出所有 `.exe` / `.bat` / `.cmd` 供选择（安装、卸载程序排在最后） |
 | **去掉 Steam** | Steam 登录、Madeira Dock、Steam 资料库 / 云存档 / 下载、「在 Steam 上查找」全部关闭 |
 | **简体中文界面** | 442 条界面文字已翻译；IPA 只带中文本地化，按设计无论 iPhone 语言设置为何都显示中文（尚未在真机上验证） |
+| **内置 GetMoreRam** | 「设置 › 提高内存上限」：登录侧载用的 Apple ID（支持双重认证、短信验证码），为 Madeira 自己或账户里任一 App ID 开启「提高内存上限」，然后在侧载工具里重新安装即可 |
 | **液态玻璃图标** | Icon Composer 分层图标，iOS 26 上有浅色、深色、着色三种外观 |
 | **GitHub Actions 打包 IPA** | `.github/workflows/madeira-ipa.yml` |
 
@@ -30,6 +31,18 @@ IPA 是 ad-hoc 签名并带有权限声明（`get-task-allow`、提高内存上�
 - 不支持：加密压缩包（会提示先在电脑上去掉密码）、分卷压缩包、rar。
 - 压缩包里只有一个顶层文件夹时，就用这个文件夹；否则用压缩包的文件名作为文件夹名。重名时自动加上「 2」「 3」。
 - 程序 x86 / x64 均可；32 位程序走 WoW64。
+
+## 提高内存上限（内置 GetMoreRam）
+
+「设置 › 提高内存上限」做的事与 GetMoreRam 相同：登录 Apple 开发者服务，给 App ID 打开 `INCREASED_MEMORY_LIMIT`。
+开启后在 SideStore / AltStore / Sideloadly 中**重新安装或刷新** Madeira，新描述文件才会带上这项权限，设置页的「内存+」随后变绿。
+
+- 密码只用于登录，**不保存**；只记住 Apple ID 邮箱，方便下次填写。
+- 登录需要 anisette 数据，来自 SideStore 的服务器 `ani.sidestore.app`（GetMoreRam 也用它），该服务器看不到密码。
+- 登录代码来自 [Impactor](https://github.com/khcrysalis/Impactor) 的 `plume_core` 与 `omnisette`（MPL-2.0），放在
+  `build/rppairing-ios/src/appleid`，链接进原有的 `libmadeira_rppairing.a`。相对上游的修改：打开了 anisette 客户端的证书校验
+  （上游关闭了），去掉了会记录会话令牌的日志和两处会让 App 崩溃的 panic。GetMoreRam 和它用的 StosSign 没有开源许可证，所以没有直接使用。
+- 尚未在真机上验证。
 
 ## 目录结构
 
