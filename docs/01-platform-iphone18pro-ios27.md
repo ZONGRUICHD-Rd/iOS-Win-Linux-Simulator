@@ -49,7 +49,7 @@ Hypervisor.framework 不对第三方 iOS App 开放（需要 `com.apple.private.
 
 | 授权 | 作用 | 获取 |
 |---|---|---|
-| `com.apple.developer.kernel.increased-memory-limit` | 提高 jetsam 上限 | 免费账号可加（GetMoreRam 方式）**已实测** |
+| `com.apple.developer.kernel.increased-memory-limit` | 提高 jetsam 上限 | 免费账号可加（GetMoreRam 方式）**已实测**：iPhone 18 Pro / iOS 27，2026-10 |
 | `com.apple.developer.kernel.extended-virtual-addressing` | 用户地址空间 63 GB → 512 GB | 免费账号能否加 **待实测** |
 
 **测试 extended-virtual-addressing**（不需要写新代码）：
