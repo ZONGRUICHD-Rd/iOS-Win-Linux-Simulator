@@ -4,14 +4,15 @@
 #
 #   madeira/ci/build-native.sh MADEIRA_DIR [STAGE...]
 #
-# Stages, in order: tools llvm gnutls ffmpeg wine-config wine-unix dxmt fex rppairing extras
+# Stages, in order: tools llvm gnutls ffmpeg wine-config wine-headers freetype wine-unix dxmt fex
+# rppairing extras
 # (all of them without arguments). A stage whose outputs exist is skipped, so a
 # CI cache of toolchains/ and FEX/build-ios turns most of it into a no-op.
 set -euo pipefail
 
 M="$(cd "$1" && pwd)"; shift
 STAGES=("$@")
-[ ${#STAGES[@]} -gt 0 ] || STAGES=(tools llvm gnutls ffmpeg wine-config wine-unix dxmt fex rppairing extras)
+[ ${#STAGES[@]} -gt 0 ] || STAGES=(tools llvm gnutls ffmpeg wine-config wine-headers freetype wine-unix dxmt fex rppairing extras)
 T="$M/toolchains"
 mkdir -p "$T"
 JOBS="$(sysctl -n hw.ncpu)"
@@ -99,11 +100,51 @@ stage_wine_config() {
         ../configure --enable-archs=aarch64 --without-x --without-vulkan --without-freetype --disable-tests)
 }
 
+stage_wine_headers() {
+    # Some unix sides include widl-generated headers (dwrite_3.h for dwrite,
+    # mfobjects.h and mftransform.h for winegstreamer), which only a build
+    # creates. Generate every include/*.idl header in build-macos.
+    local b="$M/wine/build-macos"
+    if [ -f "$b/include/dwrite_3.h" ] && [ -f "$b/include/mftransform.h" ]; then say "wine headers (done)"; return; fi
+    say "wine generated headers"
+    local targets=() f
+    for f in "$M"/wine/include/*.idl; do targets+=("include/$(basename "${f%.idl}").h"); done
+    PATH="$(brew --prefix bison)/bin:$PATH" make -C "$b" -k -j "$JOBS" "${targets[@]}" >"$T/wine-headers.log" 2>&1 || true
+    for f in dwrite_3.h mfobjects.h mftransform.h; do
+        [ -f "$b/include/$f" ] || { tail -40 "$T/wine-headers.log"; echo "error: wine/build-macos/include/$f was not generated"; exit 1; }
+    done
+}
+
+stage_freetype() {
+    # win32u and dwrite link FreeType statically (build/freetype-ios).
+    local src="$M/research/freetype"
+    if [ -f "$M/build/freetype-ios/build/libfreetype.a" ]; then say "freetype (done)"; return; fi
+    say "freetype"
+    [ -d "$src" ] || git clone -q --depth 1 --branch VER-2-13-3 https://github.com/freetype/freetype.git "$src"
+    bash "$M/build/freetype-ios/build.sh"
+}
+
+# The unix-side scripts keep each file's compiler errors in obj/NAME.err.
+show_errors() {
+    local e
+    for e in "$M"/build/"$1"/obj/*.err "$M"/build/"$1"/obj/err-*.txt; do
+        [ -f "$e" ] || continue
+        [ -s "$e" ] || continue
+        grep -q "error:" "$e" || continue
+        echo "---- ${e#"$M"/} ----"
+        grep -m 20 -B 2 -A 3 "error:" "$e" || true
+    done
+}
+
 stage_wine_unix() {
     say "wine unix side (ntdll, wineserver, win32u)"
-    bash "$M/build/ntdll-unix/build.sh"
-    bash "$M/build/wineserver/build.sh"
-    bash "$M/build/win32u-unix/build.sh"
+    # wineserver's script renames symbols with llvm-objcopy, which llvm-mingw has.
+    export PATH="$PATH:$T/$LLVM_MINGW/bin"
+    local d failed=0
+    for d in ntdll-unix wineserver win32u-unix; do
+        bash "$M/build/$d/build.sh" || { show_errors "$d"; failed=1; }
+    done
+    [ "$failed" = 0 ] || exit 1
     for l in ntdll_unix wineserver win32u_unix; do
         [ -f "$M/app/Madeira/lib$l.a" ] || { echo "error: app/Madeira/lib$l.a was not produced"; exit 1; }
     done

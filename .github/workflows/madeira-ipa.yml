@@ -128,10 +128,14 @@ jobs:
           path: madeira/work/Madeira/FEX/build-ios
           key: fex-ios-v1-${{ steps.keys.outputs.fex }}
 
-      # Runs even when FEX failed, so one CI run reports both.
-      - name: Native - Wine unix side, DXMT, pairing library
+      # These run even when an earlier native step failed, so one CI run
+      # reports every failure.
+      - name: Native - Wine unix side
         if: ${{ !cancelled() && steps.native-llvm.outcome == 'success' }}
-        run: madeira/ci/build-native.sh "$MADEIRA" wine-unix dxmt rppairing extras
+        run: madeira/ci/build-native.sh "$MADEIRA" wine-headers freetype wine-unix
+      - name: Native - DXMT, pairing library
+        if: ${{ !cancelled() && steps.native-llvm.outcome == 'success' }}
+        run: madeira/ci/build-native.sh "$MADEIRA" dxmt rppairing extras
 
       - name: Build app (Debug, unsigned)
         run: |

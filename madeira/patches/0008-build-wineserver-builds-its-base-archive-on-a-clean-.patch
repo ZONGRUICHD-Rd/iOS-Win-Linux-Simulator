@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ZONGRUICHD-Rd <zongkrak@outlook.com>
+Date: Wed, 7 Oct 2026 16:24:07 +0000
+Subject: [PATCH] build: wineserver builds its base archive on a clean checkout
+
+build/wineserver/build.sh patched objects into an existing
+libwineserver.a, which a clean checkout does not have. Build that base
+from wine/server with the same flags when it is missing.
+---
+ build/wineserver/build.sh | 32 ++++++++++++++++++++++----------
+ 1 file changed, 22 insertions(+), 10 deletions(-)
+
+diff --git a/build/wineserver/build.sh b/build/wineserver/build.sh
+index a950905..eab5097 100755
+--- a/build/wineserver/build.sh
++++ b/build/wineserver/build.sh
+@@ -12,16 +12,6 @@ SHIMS_DIR="$REPO_ROOT/build/ntdll-unix/shims"
+ OBJ_DIR="$BUILD_DIR/obj"
+ mkdir -p "$OBJ_DIR"
+ 
+-# Copy the base library if we don't have one yet
+-if [ ! -f "$OBJ_DIR/libwineserver.a" ]; then
+-    if [ -f "$APP_LIB" ]; then
+-        cp "$APP_LIB" "$OBJ_DIR/libwineserver.a"
+-    else
+-        echo "ERROR: No base libwineserver.a found"
+-        exit 1
+-    fi
+-fi
+-
+ CC_FLAGS=(
+     -arch arm64 -isysroot "$SDK" -miphoneos-version-min=17.0 -O2
+     -I"$WINE_SRC/include" -I"$WINE_SRC/include/wine"
+@@ -45,6 +35,28 @@ CC_FLAGS=(
+     -Wno-implicit-function-declaration
+ )
+ 
++# Copy the base library if we don't have one yet. A clean checkout has
++# none: build it from every wine/server source with the same flags; the
++# patched files below then replace their objects. Sources that do not
++# compile for iOS are left out (the patched ones among them are replaced).
++if [ ! -f "$OBJ_DIR/libwineserver.a" ]; then
++    if [ -f "$APP_LIB" ]; then
++        cp "$APP_LIB" "$OBJ_DIR/libwineserver.a"
++    else
++        echo "=== Building base libwineserver.a from wine/server ==="
++        BASE_DIR="$OBJ_DIR/base"
++        rm -rf "$BASE_DIR" && mkdir -p "$BASE_DIR"
++        BASE_SKIPPED=""
++        for src in "$WINE_SRC"/server/*.c; do
++            name=$(basename "$src" .c)
++            xcrun -sdk iphoneos clang "${CC_FLAGS[@]}" -c "$src" -o "$BASE_DIR/$name.o" \
++                2>"$BASE_DIR/err-$name.txt" || BASE_SKIPPED="$BASE_SKIPPED $name"
++        done
++        [ -z "$BASE_SKIPPED" ] || echo "  not compiled for iOS:$BASE_SKIPPED"
++        ar rcs "$OBJ_DIR/libwineserver.a" "$BASE_DIR"/*.o
++    fi
++fi
++
+ compile_one() {
+     local src=$1
+     local name=$2
+-- 
+2.43.0
+
