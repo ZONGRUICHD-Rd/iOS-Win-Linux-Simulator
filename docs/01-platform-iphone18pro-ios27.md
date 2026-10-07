@@ -31,6 +31,7 @@ iOS 17 的旧 JIT 方式）都不适用。唯一的路是 **TXM 下的调试器 
 - 获得调试器的方式：内置 StikJIT（App 扩展充当调试器进程，iOS 27 可 App 内配对）或外部 StikDebug。
   都依赖 **LocalDevVPN**（App Store 上的回环 VPN），**蜂窝数据下不可用**，需要 Wi-Fi 或完全断网。
 - 待实测：在 iPhone 18 Pro 上能准备的最大区域、所需时间；StikDebug#476（iOS 27.0 附加失败）是否影响内置 StikJIT。
+- **在 LiveContainer 里只有 StikDebug 一条路**（内置 StikJIT 需要 App 扩展），所以 StikDebug#476 的影响更直接。见 [06](06-livecontainer.md)。
 
 ### 2. 没有硬件虚拟化（已确认）
 

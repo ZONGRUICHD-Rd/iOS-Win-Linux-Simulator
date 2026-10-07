@@ -15,6 +15,7 @@
 | 能不能做？ | 能。iOS 27 下，侧载 + 调试器 JIT + 内存授权，三件事凑齐就能跑翻译器和模拟器 |
 | JIT 怎么来？ | iPhone 18 Pro 出厂 iOS 27，有 TXM，只能用 StikDebug/StikJIT 的 **断点协议**，而且 JIT 区域 **只能申请一次** |
 | 内存怎么办？ | 用 GetMoreRam 给 App ID 加 increased-memory-limit（免费账号已在 iPhone 18 Pro / iOS 27 实测可行）；extended-virtual-addressing 待验证 |
+| LiveContainer？ | 作者全程用 LiveContainer。授权要加在 LiveContainer 的 App ID 上；JIT **只能走 StikDebug**（内置 StikJIT 依赖 App 扩展，LiveContainer 不支持），见 [06](docs/06-livecontainer.md) |
 | Windows | **基于 Madeira，不重造**。它已经能在 iPhone 上跑 Windows 游戏；我们做实测、分诊和补空白（Vulkan 等） |
 | Linux | **没人做好，是本项目的主战场**。先用 QEMU 整机 VM 快速跑起来，再做 “动态 LFI” 原生运行时追求性能 |
 
@@ -28,6 +29,7 @@
 | [03 · Linux 方向](docs/03-linux-path.md) | 四条技术路线对比，推荐方案，B2 “动态 LFI” 设计，Debian 二进制实测数据 |
 | [04 · 路线图](docs/04-roadmap.md) | P0 设备探针 → P1 Windows → P2 QEMU VM → P3 原生运行时 → P4 体验 |
 | [05 · 许可证](docs/05-licensing.md) | 各组件许可证兼容性；为什么 QEMU 必须单独构建 |
+| [06 · LiveContainer](docs/06-livecontainer.md) | 在 LiveContainer 里运行：授权、JIT、地址空间的差异，对设计的约束 |
 
 ## 架构草图
 
