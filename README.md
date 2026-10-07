@@ -30,6 +30,7 @@
 | [04 · 路线图](docs/04-roadmap.md) | P0 设备探针 → P1 Windows → P2 QEMU VM → P3 原生运行时 → P4 体验 |
 | [05 · 许可证](docs/05-licensing.md) | 各组件许可证兼容性；为什么 QEMU 必须单独构建 |
 | [06 · LiveContainer](docs/06-livecontainer.md) | 在 LiveContainer 里运行：授权、JIT、地址空间的差异，对设计的约束 |
+| [07 · iPhone 的运行机制](docs/07-iphone-mechanisms.md) | 入门：代码签名、W^X、调试器 JIT、TXM、沙箱、jetsam、权限、LiveContainer 原理 |
 
 ## 架构草图
 
