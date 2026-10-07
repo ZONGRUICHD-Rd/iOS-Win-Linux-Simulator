@@ -27,7 +27,7 @@ find "$A" -name '*.dylib' -print0 | while IFS= read -r -d '' f; do sign "$f"; do
 for fw in "$A"/Frameworks/*.framework; do [ -d "$fw" ] && sign "$fw"; done
 for ext in "$A"/PlugIns/*.appex; do [ -d "$ext" ] && sign "$ext"; done
 sign --entitlements "$M/app/Madeira/Madeira.entitlements" --generate-entitlement-der "$A"
-codesign -d --entitlements - "$A" | head -20
+codesign -d --entitlements - "$A"
 
 mkdir -p "$WORK/Payload"
 mv "$A" "$WORK/Payload/"

@@ -187,6 +187,9 @@ stage_extras() {
     # Microsoft's VC++ runtime is not redistributable here; the project
     # references the folder, so it exists, empty (docs/BUILDING.md upstream).
     mkdir -p "$M/app/Madeira/x86_64-vcruntime"
+    # The app bundles copies of COPYING and LICENSE-EXCEPTION.md (ignored in
+    # git); the "Sign bundled dylibs" build phase fails when they are missing.
+    bash "$M/build/stage-licenses.sh"
 }
 
 for s in "${STAGES[@]}"; do
