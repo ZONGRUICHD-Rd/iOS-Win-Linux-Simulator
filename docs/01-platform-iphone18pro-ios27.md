@@ -94,7 +94,7 @@ Linux 内核会为 EL0 模拟 `MIDR_EL1`、`ID_AA64*_EL1` 的读取（HWCAP_CPUI
 
 ### 8. 图形（已确认）
 
-只有 Metal。没有原生 OpenGL/Vulkan。可用的转换层：
+只有 Metal 是一等公民。OpenGL ES 自 iOS 12 起已废弃（不再更新），没有桌面 OpenGL，也没有 Vulkan。可用的转换层：
 
 | 源 API | 到 Metal |
 |---|---|
