@@ -18,6 +18,11 @@ A="$WORK/$(basename "$APP")"
 
 sign() { codesign --force --sign - --timestamp=none "$@"; }
 
+# The fork's interface is Chinese for everyone: with en.lproj gone, zh-Hans is
+# the app's only localization (and its development region), whatever the
+# iPhone's language. English stays the fallback for any string not translated.
+rm -rf "$A/en.lproj"
+
 find "$A" -name '*.dylib' -print0 | while IFS= read -r -d '' f; do sign "$f"; done
 for fw in "$A"/Frameworks/*.framework; do [ -d "$fw" ] && sign "$fw"; done
 for ext in "$A"/PlugIns/*.appex; do [ -d "$ext" ] && sign "$ext"; done

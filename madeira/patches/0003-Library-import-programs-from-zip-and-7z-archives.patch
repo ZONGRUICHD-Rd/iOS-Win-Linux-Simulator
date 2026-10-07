@@ -12,10 +12,10 @@ list of its executables, installers and uninstallers last, lets the user
 choose, or browse the folder.
 ---
  app/Madeira.xcodeproj/project.pbxproj |  80 +++++++
- app/Madeira/ArchiveImport.swift       | 299 ++++++++++++++++++++++++++
+ app/Madeira/ArchiveImport.swift       | 300 ++++++++++++++++++++++++++
  app/Madeira/Library.swift             |  29 ++-
  app/Madeira/Madeira-Bridging-Header.h |   1 +
- 4 files changed, 408 insertions(+), 1 deletion(-)
+ 4 files changed, 409 insertions(+), 1 deletion(-)
  create mode 100644 app/Madeira/ArchiveImport.swift
 
 diff --git a/app/Madeira.xcodeproj/project.pbxproj b/app/Madeira.xcodeproj/project.pbxproj
@@ -132,10 +132,10 @@ index 678ed14..9bdea6f 100644
  				A1000650 /* DockStartScreen.swift in Sources */,
 diff --git a/app/Madeira/ArchiveImport.swift b/app/Madeira/ArchiveImport.swift
 new file mode 100644
-index 0000000..a8d71d4
+index 0000000..1ae8470
 --- /dev/null
 +++ b/app/Madeira/ArchiveImport.swift
-@@ -0,0 +1,299 @@
+@@ -0,0 +1,300 @@
 +// SPDX-License-Identifier: GPL-3.0-or-later
 +// Madeira Converter Exception: see LICENSE-EXCEPTION.md
 +//
@@ -197,7 +197,8 @@ index 0000000..a8d71d4
 +        let box = ProgressBox(progress)
 +        let ctx = Unmanaged.passRetained(box).toOpaque()
 +        defer { Unmanaged<ProgressBox>.fromOpaque(ctx).release() }
-+        var detail = [CChar](repeating: 0, count: 512)
++        let detailSize = 512
++        var detail = [CChar](repeating: 0, count: detailSize)
 +        // A block that cannot be streamed may take up to about half of what is
 +        // left to this app; LZMA dictionaries always get at least 256 MB.
 +        let available = UInt64(os_proc_available_memory())
@@ -206,7 +207,7 @@ index 0000000..a8d71d4
 +            guard let ctx else { return 0 }
 +            let box = Unmanaged<ProgressBox>.fromOpaque(ctx).takeUnretainedValue()
 +            return box.report(total > 0 ? Double(done) / Double(total) : 0) ? 0 : 1
-+        }, ctx, &detail, detail.count)
++        }, ctx, &detail, detailSize)
 +        if Int(rc) == Int(MA_ERR_CANCELLED) { throw Cancelled() }
 +        guard Int(rc) == Int(MA_OK) else {
 +            throw Failure(code: Int(rc), detail: String(cString: detail))

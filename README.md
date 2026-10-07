@@ -15,8 +15,8 @@
 | 能不能做？ | 能。iOS 27 下，侧载 + 调试器 JIT + 内存授权，三件事凑齐就能跑翻译器和模拟器 |
 | JIT 怎么来？ | iPhone 18 Pro 出厂 iOS 27，有 TXM，只能用 StikDebug/StikJIT 的 **断点协议**，而且 JIT 区域 **只能申请一次** |
 | 内存怎么办？ | 用 GetMoreRam 给 App ID 加 increased-memory-limit（免费账号已在 iPhone 18 Pro / iOS 27 实测可行）；extended-virtual-addressing 待验证 |
-| LiveContainer？ | 作者全程用 LiveContainer。授权要加在 LiveContainer 的 App ID 上；JIT **只能走 StikDebug**（内置 StikJIT 依赖 App 扩展，LiveContainer 不支持），见 [06](docs/06-livecontainer.md) |
-| Windows | **基于 Madeira，不重造**。它已经能在 iPhone 上跑 Windows 游戏；我们做实测、分诊和补空白（Vulkan 等） |
+| LiveContainer？ | Madeira **直接侧载**，不放进 LiveContainer（那样内置 StikJIT 和 App 内配对都能用）。其他 App 仍可用 LiveContainer，差异见 [06](docs/06-livecontainer.md) |
+| Windows | **基于 Madeira 做修改版**（[madeira/](madeira/README.md)：导入 zip/7z、去掉 Steam、中文、液态玻璃图标，GitHub Actions 出 IPA）。它已经能在 iPhone 上跑 Windows 游戏；我们做实测、分诊和补空白（Vulkan 等） |
 | Linux | **没人做好，是本项目的主战场**。先用 QEMU 整机 VM 快速跑起来，再做 “动态 LFI” 原生运行时追求性能 |
 
 ## 文档

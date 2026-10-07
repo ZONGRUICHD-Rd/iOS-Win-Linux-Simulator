@@ -1,6 +1,9 @@
 # 06 · 在 LiveContainer 里运行
 
-项目作者全程使用 [LiveContainer](https://github.com/LiveContainer/LiveContainer)（AGPL-3.0）。
+> **更新（2026-10）：作者决定 Madeira 不在 LiveContainer 中使用，而是直接侧载安装**（见 [02](02-windows-path.md)）。
+> 下面的分析仍适用于放在 LiveContainer 里的其他 App，以及本项目今后可能做的 Linux App。
+
+项目作者使用 [LiveContainer](https://github.com/LiveContainer/LiveContainer)（AGPL-3.0）运行其他 App。
 它是一个 “App 启动器”：把别的 App 的可执行文件当成 dylib `dlopen` 到自己进程里运行，
 所以只占 **一个 App ID**，绕过免费账号 “3 个 App / 每周 10 个 App ID” 的限制。
 

@@ -1,0 +1,4990 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: iwls <iwls@localhost>
+Date: Wed, 7 Oct 2026 15:36:04 +0000
+Subject: [PATCH] Localize the app into Simplified Chinese
+
+Localizable.xcstrings carries zh-Hans translations for the app's
+interface (generated from the fork's madeira/l10n/zh-Hans.json), and
+zh-Hans is the development region. Onboarding's header/primary/secondary
+helpers take LocalizedStringKey so their titles are looked up, and the
+library's, JIT setup's and Wine Mono's error and status messages go
+through String(localized:). The local-network permission text is in
+Chinese.
+---
+ app/Madeira.xcodeproj/project.pbxproj |    5 +
+ app/Madeira/ContentView.swift         |   14 +-
+ app/Madeira/Info.plist                |    4 +-
+ app/Madeira/JITSetup.swift            |   30 +-
+ app/Madeira/Library.swift             |   42 +-
+ app/Madeira/Localizable.xcstrings     | 4426 +++++++++++++++++++++++++
+ app/Madeira/Onboarding.swift          |    6 +-
+ app/Madeira/WineMono.swift            |   20 +-
+ 8 files changed, 4489 insertions(+), 58 deletions(-)
+ create mode 100644 app/Madeira/Localizable.xcstrings
+
+diff --git a/app/Madeira.xcodeproj/project.pbxproj b/app/Madeira.xcodeproj/project.pbxproj
+index cb462a4..e2fb29e 100644
+--- a/app/Madeira.xcodeproj/project.pbxproj
++++ b/app/Madeira.xcodeproj/project.pbxproj
+@@ -7,6 +7,7 @@
+ 	objects = {
+ 
+ /* Begin PBXBuildFile section */
++		C1000102 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C2000102 /* Localizable.xcstrings */; };
+ 		C1000101 /* MadeiraGlass.icon in Resources */ = {isa = PBXBuildFile; fileRef = C2000101 /* MadeiraGlass.icon */; };
+ 		C1000001 /* ArchiveImport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000001 /* ArchiveImport.swift */; };
+ 		C1000002 /* MadeiraArchive.c in Sources */ = {isa = PBXBuildFile; fileRef = C2000002 /* MadeiraArchive.c */; };
+@@ -194,6 +195,7 @@
+ /* End PBXCopyFilesBuildPhase section */
+ 
+ /* Begin PBXFileReference section */
++		C2000102 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+ 		C2000101 /* MadeiraGlass.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = MadeiraGlass.icon; sourceTree = "<group>"; };
+ 		C2000001 /* ArchiveImport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ArchiveImport.swift"; path = "ArchiveImport.swift"; sourceTree = "<group>"; };
+ 		C2000002 /* MadeiraArchive.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = "MadeiraArchive.c"; path = "Archive/MadeiraArchive.c"; sourceTree = "<group>"; };
+@@ -428,6 +430,7 @@
+ 		A4000002 /* Madeira */ = {
+ 			isa = PBXGroup;
+ 			children = (
++				C2000102 /* Localizable.xcstrings */,
+ 				C2000101 /* MadeiraGlass.icon */,
+ 				C2000001 /* ArchiveImport.swift */,
+ 				C2000002 /* MadeiraArchive.c */,
+@@ -687,6 +690,7 @@
+ 			hasScannedForEncodings = 0;
+ 			knownRegions = (
+ 				en,
++				"zh-Hans",
+ 				Base,
+ 			);
+ 			mainGroup = A4000001;
+@@ -717,6 +721,7 @@
+ 				A1000094 /* cacert.pem in Resources */,
+ 				A1000910 /* Assets.xcassets in Resources */,
+ 				C1000101 /* MadeiraGlass.icon in Resources */,
++				C1000102 /* Localizable.xcstrings in Resources */,
+ 				B1000004 /* madeira-jit.js in Resources */,
+ 				B1000051 /* Madeira JIT.shortcut in Resources */,
+ 			);
+diff --git a/app/Madeira/ContentView.swift b/app/Madeira/ContentView.swift
+index 72a0a4d..7e2bfff 100644
+--- a/app/Madeira/ContentView.swift
++++ b/app/Madeira/ContentView.swift
+@@ -2405,7 +2405,7 @@ struct ContentView: View {
+         guard started, StikJITHelper.ready, library.current == nil, wine_process_is_running() == 0 else {
+             logStore.log("[jit-on-play] JIT did not come on: the game was not started")
+             // A failure has its own error; this one closes the details page as well.
+-            if started, library.current == nil { library.error = "JIT is on, but the game could not start. Tap Play again." }
++            if started, library.current == nil { library.error = String(localized: "JIT is on, but the game could not start. Tap Play again.") }
+             return
+         }
+         logStore.log("[jit-on-play] JIT is on: starting the game")
+@@ -2433,7 +2433,7 @@ struct ContentView: View {
+             if inLibrary { library.jitNotice = StikJITHelper.noDebuggerMessage }
+         } else {
+             logStore.log("JIT not enabled. Press 'Enable JIT' first.", level: .error)
+-            if inLibrary { library.error = "Enable JIT before playing." }
++            if inLibrary { library.error = String(localized: "Enable JIT before playing.") }
+         }
+         return false
+     }
+@@ -2499,7 +2499,7 @@ struct ContentView: View {
+             launchLibraryEntry(entry); return
+         }
+         LogStore.shared.log("[shortcut] \(exe) is not in the library: not started", level: .error)
+-        library.error = "This shortcut's game is not in the library. Add it to the library, then use the shortcut again."
++        library.error = String(localized: "This shortcut's game is not in the library. Add it to the library, then use the shortcut again.")
+     }
+ 
+     /// Play in the library (Library.swift): checks that a session can start,
+@@ -2526,7 +2526,7 @@ struct ContentView: View {
+                                 "args=\(entry.launchArguments.isEmpty ? 0 : 1) folder=\(entry.steamWorkingWindowsPath == nil ? "program" : "steam")")
+         }
+         guard wine_process_is_running() == 0, wineserver_is_running() == 0, library.current == nil else {
+-            library.error = "A session is already running."; return
++            library.error = String(localized: "A session is already running."); return
+         }
+         // One Wine session per app run (see LibraryModel.sessionsThisRun).
+         if LibraryModel.sessionsThisRun > 0, MadeiraConfig.flag("MADEIRA_ONE_SESSION_PER_RUN") {
+@@ -2551,7 +2551,7 @@ struct ContentView: View {
+         // launchArguments carries the whole ml1163 command (explorer's /desktop=, the quoted
+         // program, its arguments); validate() and the bridge's tokenizer take 4 KB.
+         guard entry.launchWindowsPath.utf8.count < 1024, entry.launchArguments.utf8.count < 4096 else {
+-            library.error = "The executable path or launch arguments are too long."; return
++            library.error = String(localized: "The executable path or launch arguments are too long."); return
+         }
+         entry.configureLaunch()
+         // This run's log under the program's name too (Documents/logs). A Steam game started
+@@ -3265,7 +3265,7 @@ struct ContentView: View {
+         guard cloudClear(game.id, name: game.name, retry: { startDock(game, compactPool: compactPool, profile: profile) }) else { return }
+         guard wine_process_is_running() == 0, wineserver_is_running() == 0, !inLibrary || library.current == nil else {
+             logStore.log("[madeira-dock] a session already ran in this app run; restart Madeira first", level: .error)
+-            if inLibrary { library.error = "A session is already running." }
++            if inLibrary { library.error = String(localized: "A session is already running.") }
+             return
+         }
+         if inLibrary, LibraryModel.sessionsThisRun > 0, MadeiraConfig.flag("MADEIRA_ONE_SESSION_PER_RUN") {
+@@ -3305,7 +3305,7 @@ struct ContentView: View {
+                 // The launch state may have changed while the connection closed.
+                 guard StikJITHelper.ready, wine_process_is_running() == 0, wineserver_is_running() == 0,
+                       !inLibrary || library.current == nil else {
+-                    throw DockError.message("The launch state changed. Enable JIT and try again.")
++                    throw DockError.message(String(localized: "The launch state changed. Enable JIT and try again."))
+                 }
+                 guard let signIn = SteamSignIn.credentialsForDock() else {
+                     throw DockError.message("Sign in to Steam in Madeira before starting Dock.")
+diff --git a/app/Madeira/Info.plist b/app/Madeira/Info.plist
+index 651ac88..8ec470a 100644
+--- a/app/Madeira/Info.plist
++++ b/app/Madeira/Info.plist
+@@ -10,7 +10,7 @@
+ 	<key>CADisableMinimumFrameDurationOnPhone</key>
+ 	<true/>
+ 	<key>CFBundleDevelopmentRegion</key>
+-	<string>en</string>
++	<string>zh-Hans</string>
+ 	<key>CFBundleDisplayName</key>
+ 	<string>Madeira</string>
+ 	<key>CFBundleExecutable</key>
+@@ -57,7 +57,7 @@
+ 		<string>_remotepairing-pairable-host._tcp</string>
+ 	</array>
+ 	<key>NSLocalNetworkUsageDescription</key>
+-	<string>Madeira uses the local network to pair with this device for JIT, without a computer.</string>
++	<string>Madeira 使用本地网络与本设备配对以启用 JIT，无需电脑。</string>
+ 	<key>UIApplicationSupportsIndirectInputEvents</key>
+ 	<true/>
+ 	<key>UIFileSharingEnabled</key>
+diff --git a/app/Madeira/JITSetup.swift b/app/Madeira/JITSetup.swift
+index b794853..03872df 100644
+--- a/app/Madeira/JITSetup.swift
++++ b/app/Madeira/JITSetup.swift
+@@ -257,7 +257,7 @@ final class JITCoordinator: ObservableObject {
+                                        vpnWasUp ? 1 : 0, probe.detail))
+             self?.loopbackAnswered = probe.reachable
+             guard let self, !probe.reachable, JITNetworkShortcut.shared.enabled else { proceed(false); return }
+-            status = "Running the \(JITNetworkShortcut.name) shortcut…"
++            status = String(localized: "Running the \(JITNetworkShortcut.name) shortcut…")
+             JITNetworkShortcut.shared.start { [weak self] outcome in
+                 if case .failed(let why) = outcome {
+                     stopped("Your \(JITNetworkShortcut.name) shortcut stopped: \(why) Check its steps in Shortcuts, then try again.")
+@@ -265,7 +265,7 @@ final class JITCoordinator: ObservableObject {
+                 }
+                 // LocalDevVPN's Connect returns before its tunnel routes (about 5 s
+                 // on the 18 Pro): go on the moment lockdownd answers.
+-                self?.status = "Waiting for LocalDevVPN…"
++                self?.status = String(localized: "Waiting for LocalDevVPN…")
+                 let waitStart = CFAbsoluteTimeGetCurrent()
+                 LoopbackProbe.waitUntilReachable(within: 15) { [weak self] probe in
+                     LogStore.shared.log(String(format: "[jit-loopback] after the shortcut: %@ after %.1f s (vpn-interface=%d, %@)",
+@@ -284,19 +284,19 @@ final class JITCoordinator: ObservableObject {
+     func connectWithShortcut() {
+         busy = true
+         error = nil
+-        status = "Running the \(JITNetworkShortcut.name) shortcut…"
++        status = String(localized: "Running the \(JITNetworkShortcut.name) shortcut…")
+         JITNetworkShortcut.shared.start { [weak self] outcome in
+             if case .failed(let why) = outcome {
+                 self?.busy = false
+                 self?.status = nil
+-                self?.error = "The \(JITNetworkShortcut.name) shortcut did not run: \(why)."
++                self?.error = String(localized: "The \(JITNetworkShortcut.name) shortcut did not run: \(why).")
+                 return
+             }
+             LoopbackProbe.waitUntilReachable(within: 15) { [weak self] probe in
+                 self?.busy = false
+                 if probe.reachable {
+                     self?.connectionProblem = nil
+-                    self?.status = "LocalDevVPN reaches this device."
++                    self?.status = String(localized: "LocalDevVPN reaches this device.")
+                 } else {
+                     self?.status = nil
+                     self?.error = ConnectionProblem.vpn.message
+@@ -311,14 +311,14 @@ final class JITCoordinator: ObservableObject {
+             assertionFailure("Automatic must resolve to a concrete JIT method")
+         case .stikDebug:
+             guard StikJITHelper.isAvailable else {
+-                let message = "StikDebug is not installed. Install it or choose Built-in StikJIT."
++                let message = String(localized: "StikDebug is not installed. Install it or choose Built-in StikJIT.")
+                 error = message
+                 showSetup = true
+                 completion(.failure(CoordinatorError.setupRequired(message)))
+                 return
+             }
+             busy = true
+-            status = "Waiting for StikDebug…"
++            status = String(localized: "Waiting for StikDebug…")
+             StikJITHelper.enableJIT { [weak self] result in
+                 Task { @MainActor in
+                     self?.busy = false
+@@ -329,7 +329,7 @@ final class JITCoordinator: ObservableObject {
+             }
+         case .builtIn:
+             guard JITPairingFileStore.isImported else {
+-                let message = "Pair this device or import its pairing file to finish Built-in StikJIT setup."
++                let message = String(localized: "Pair this device or import its pairing file to finish Built-in StikJIT setup.")
+                 error = message
+                 showSetup = true
+                 completion(.failure(CoordinatorError.setupRequired(message)))
+@@ -344,7 +344,7 @@ final class JITCoordinator: ObservableObject {
+             try JITPairingFileStore.importFile(from: source)
+             OnDevicePairing.shared.cancel()
+             refreshPairingStatus()
+-            status = "Pairing file imported."
++            status = String(localized: "Pairing file imported.")
+             error = nil
+         } catch {
+             self.error = error.localizedDescription
+@@ -356,7 +356,7 @@ final class JITCoordinator: ObservableObject {
+         try JITPairingFileStore.store(data, source: .onDevice)
+         refreshPairingStatus()
+         method = .builtIn
+-        status = "Paired in Madeira."
++        status = String(localized: "Paired in Madeira.")
+         error = nil
+     }
+ 
+@@ -376,7 +376,7 @@ final class JITCoordinator: ObservableObject {
+         busy = true
+         error = nil
+         connectionProblem = nil
+-        status = "Checking LocalDevVPN and the Developer Disk Image…"
++        status = String(localized: "Checking LocalDevVPN and the Developer Disk Image…")
+         MadeiraBuiltInJIT.send(.prepare(pairingData: pairing)) { [weak self] result in
+             guard let self else { return }
+             busy = false
+@@ -414,21 +414,21 @@ final class JITCoordinator: ObservableObject {
+ 
+         busy = true
+         error = nil
+-        status = "Starting Madeira's JIT helper…"
++        status = String(localized: "Starting Madeira's JIT helper…")
+         var readinessTimer: Timer?
+         var readinessFinished = false
+         MadeiraBuiltInJIT.send(
+             .enable(targetPID: getpid(), pairingData: pairing,
+                     scriptBase64: script.base64EncodedString()),
+             started: { [weak self] in
+-                self?.status = "Waiting for Madeira's JIT helper to attach…"
++                self?.status = String(localized: "Waiting for Madeira's JIT helper to attach…")
+                 readinessTimer = StikJITHelper.waitForDebugger { [weak self] result in
+                     guard !readinessFinished else { return }
+                     readinessFinished = true
+                     self?.busy = false
+                     switch result {
+                     case .success:
+-                        self?.status = "Built-in JIT is attached."
++                        self?.status = String(localized: "Built-in JIT is attached.")
+                         self?.error = nil
+                     case .failure(let failure):
+                         self?.error = failure.localizedDescription
+@@ -474,7 +474,7 @@ final class JITCoordinator: ObservableObject {
+     func resetDDI() {
+         busy = true
+         error = nil
+-        status = "Resetting the Developer Disk Image cache…"
++        status = String(localized: "Resetting the Developer Disk Image cache…")
+         MadeiraBuiltInJIT.send(.resetDDI) { [weak self] result in
+             self?.busy = false
+             switch result {
+diff --git a/app/Madeira/Library.swift b/app/Madeira/Library.swift
+index d810bad..e293327 100644
+--- a/app/Madeira/Library.swift
++++ b/app/Madeira/Library.swift
+@@ -443,7 +443,7 @@ struct LibraryEntry: Codable, Identifiable {
+               (0...4).contains(fpsMode), !arguments.contains("\0"), !windowsPath.contains("\0"),
+               !launchArguments.contains("\0"), !launchWindowsPath.contains("\0"),
+               launchWindowsPath.utf8.count < 1024, (steamWorkingWindowsPath?.utf8.count ?? 0) < 512 else {
+-            throw LibraryError.message("The saved launch profile contains invalid display or argument values.")
++            throw LibraryError.message(String(localized: "The saved launch profile contains invalid display or argument values."))
+         }
+         var quoted = false, inToken = false, tokens = 0
+         for character in launchArguments {
+@@ -452,15 +452,15 @@ struct LibraryEntry: Codable, Identifiable {
+             else if !inToken { tokens += 1; inToken = true }
+         }
+         // WineProcessBridge takes at most 64 arguments in 4 KB.
+-        guard launchArguments.utf8.count < 4096 else { throw LibraryError.message("The complete launch command is too long.") }
+-        guard !quoted, tokens <= 64 else { throw LibraryError.message("Use balanced double quotes and at most 64 launch arguments in total.") }
++        guard launchArguments.utf8.count < 4096 else { throw LibraryError.message(String(localized: "The complete launch command is too long.")) }
++        guard !quoted, tokens <= 64 else { throw LibraryError.message(String(localized: "Use balanced double quotes and at most 64 launch arguments in total.")) }
+         // build/madeira_cfg.h reads at most 64 KB of a file.
+         guard (config?.utf8.count ?? 0) < 60_000, config?.contains("\0") != true else {
+-            throw LibraryError.message("This game's config is too long.")
++            throw LibraryError.message(String(localized: "This game's config is too long."))
+         }
+         // ml1163: the launch options.
+         guard launchMode == nil || launchMode == "desktop" || launchMode == "direct" else {
+-            throw LibraryError.message("The saved launch profile contains an invalid launch mode.")
++            throw LibraryError.message(String(localized: "The saved launch profile contains an invalid launch mode."))
+         }
+         if usesLaunchOptions, let chosen = workingDirectory?.trimmingCharacters(in: .whitespaces), !chosen.isEmpty {
+             // WineProcessBridge maps MADEIRA_WORKDIR onto drive_c (C:\ only), and the
+@@ -470,7 +470,7 @@ struct LibraryEntry: Codable, Identifiable {
+             guard !chosen.contains("\""), !chosen.contains("\0"), chosen.utf8.count < 500,
+                   let url = Self.hostURL(ofWindowsPath: chosen),
+                   FileManager.default.fileExists(atPath: url.path, isDirectory: &isFolder), isFolder.boolValue else {
+-                throw LibraryError.message("The working folder must be an existing folder on drive C:, such as C:\\Games\\Some Game.")
++                throw LibraryError.message(String(localized: "The working folder must be an existing folder on drive C:, such as C:\\Games\\Some Game."))
+             }
+         }
+         // validate() is the last step of a launch that can refuse it
+@@ -482,7 +482,7 @@ struct LibraryEntry: Codable, Identifiable {
+                 try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+                 try script.write(to: url, atomically: true, encoding: .utf8)
+             } catch {
+-                throw LibraryError.message("Could not write \(servicesScriptPath): \(error.localizedDescription)")
++                throw LibraryError.message(String(localized: "Could not write \(servicesScriptPath): \(error.localizedDescription)"))
+             }
+         }
+     }
+@@ -668,11 +668,11 @@ final class LibraryModel: ObservableObject {
+         if FileManager.default.fileExists(atPath: file.path) {
+             do {
+                 let doc = try JSONDecoder().decode(Document.self, from: Data(contentsOf: file))
+-                guard doc.version == 1 else { throw LibraryError.message("This library uses a newer format.") }
++                guard doc.version == 1 else { throw LibraryError.message(String(localized: "This library uses a newer format.")) }
+                 entries = doc.entries
+             } catch {
+                 readOnly = true
+-                self.error = "Library could not be opened. The original file was preserved. " + error.localizedDescription
++                self.error = String(localized: "Library could not be opened. The original file was preserved. ") + error.localizedDescription
+             }
+         }
+         resetPhoneResolution()
+@@ -707,7 +707,7 @@ final class LibraryModel: ObservableObject {
+     }
+ 
+     func save(_ entry: LibraryEntry) {
+-        guard !readOnly else { error = "The library file could not be read. Preserve or repair it before making changes."; return }
++        guard !readOnly else { error = String(localized: "The library file could not be read. Preserve or repair it before making changes."); return }
+         var next = entries
+         var entry = entry
+         // A Steam game has one entry: a details page opened before its card first saved
+@@ -764,7 +764,7 @@ final class LibraryModel: ObservableObject {
+             try encoder.encode(Document(version: 1, entries: next)).write(to: file, options: .atomic)
+             entries = next
+             return true
+-        } catch { self.error = "Could not save the library: " + error.localizedDescription; return false }
++        } catch { self.error = String(localized: "Could not save the library: ") + error.localizedDescription; return false }
+     }
+ 
+     /// Install size and graphics API, at most once a day per entry.
+@@ -839,13 +839,13 @@ final class LibraryModel: ObservableObject {
+         let url = drive.appendingPathComponent(relative).resolvingSymlinksInPath().standardizedFileURL
+         guard url.path.hasPrefix(drive.path + "/"), programExtensions.contains(url.pathExtension.lowercased()),
+               FileManager.default.fileExists(atPath: url.path) else {
+-            throw LibraryError.message("Choose an executable (.exe, .bat or .cmd) inside drive_c.")
++            throw LibraryError.message(String(localized: "Choose an executable (.exe, .bat or .cmd) inside drive_c."))
+         }
+         return url
+     }
+     static func inspect(_ url: URL) throws -> LibraryEntry {
+         guard url.resolvingSymlinksInPath().path.hasPrefix(drive.path + "/") else {
+-            throw LibraryError.message("The executable must be inside drive_c.")
++            throw LibraryError.message(String(localized: "The executable must be inside drive_c."))
+         }
+         if ["bat", "cmd"].contains(url.pathExtension.lowercased()) {
+             // ml1163: a batch file has no PE header. Like every entry it starts
+@@ -857,14 +857,14 @@ final class LibraryModel: ObservableObject {
+         }
+         let h = try FileHandle(forReadingFrom: url); defer { try? h.close() }
+         let dos = try h.read(upToCount: 64) ?? Data()
+-        guard dos.count == 64, dos[0] == 0x4d, dos[1] == 0x5a else { throw LibraryError.message("This is not a Windows executable.") }
++        guard dos.count == 64, dos[0] == 0x4d, dos[1] == 0x5a else { throw LibraryError.message(String(localized: "This is not a Windows executable.")) }
+         let offset = (0..<4).reduce(UInt64(0)) { $0 | (UInt64(dos[60 + $1]) << ($1 * 8)) }
+-        guard offset >= 64, offset < 16 * 1024 * 1024 else { throw LibraryError.message("Invalid executable header.") }
++        guard offset >= 64, offset < 16 * 1024 * 1024 else { throw LibraryError.message(String(localized: "Invalid executable header.")) }
+         try h.seek(toOffset: offset)
+         let pe = try h.read(upToCount: 6) ?? Data()
+-        guard pe.count == 6, Array(pe.prefix(4)) == [0x50, 0x45, 0, 0] else { throw LibraryError.message("Missing PE header.") }
++        guard pe.count == 6, Array(pe.prefix(4)) == [0x50, 0x45, 0, 0] else { throw LibraryError.message(String(localized: "Missing PE header.")) }
+         let machine = Int(pe[4]) | Int(pe[5]) << 8
+-        guard machine == 0x14c || machine == 0x8664 else { throw LibraryError.message("Only x86 and x64 executables are supported.") }
++        guard machine == 0x14c || machine == 0x8664 else { throw LibraryError.message(String(localized: "Only x86 and x64 executables are supported.")) }
+         let relative = String(url.resolvingSymlinksInPath().path.dropFirst(drive.path.count + 1))
+         let name = url.deletingPathExtension().lastPathComponent.replacingOccurrences(of: "_", with: " ")
+         var entry = LibraryEntry(title: name, relativePath: relative, bits: machine == 0x14c ? 32 : 64)
+@@ -2904,7 +2904,7 @@ struct LibraryDetail: View {
+         // program is chosen (no client or sign-in involved).
+         if let appID = entry.steamAppID {
+             if SteamOwnedLibrary.shared.downloads[appID] != nil {
+-                error = "This game's update has not finished. Resume it and wait for it to complete before playing."; return
++                error = String(localized: "This game's update has not finished. Resume it and wait for it to complete before playing."); return
+             }
+             let installed = SteamGamesModel.shared.games.first { $0.id == appID }?.installed ?? false
+             if entry.startsSteamGameDirectly {
+@@ -3170,11 +3170,11 @@ struct LibraryDetail: View {
+                 do {
+                     let url = try result.get(); let access = url.startAccessingSecurityScopedResource(); defer { if access { url.stopAccessingSecurityScopedResource() } }
+                     let attrs = try url.resourceValues(forKeys: [.fileSizeKey])
+-                    guard (attrs.fileSize ?? Int.max) <= 20_000_000 else { throw LibraryError.message("Choose an image smaller than 20 MB.") }
++                    guard (attrs.fileSize ?? Int.max) <= 20_000_000 else { throw LibraryError.message(String(localized: "Choose an image smaller than 20 MB.")) }
+                     let data = try Data(contentsOf: url)
+                     guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+                           let thumbnail = CGImageSourceCreateThumbnailAtIndex(source, 0, [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceThumbnailMaxPixelSize: 1200, kCGImageSourceCreateThumbnailWithTransform: true] as CFDictionary),
+-                          let jpeg = UIImage(cgImage: thumbnail).jpegData(compressionQuality: 0.85) else { throw LibraryError.message("This image could not be opened.") }
++                          let jpeg = UIImage(cgImage: thumbnail).jpegData(compressionQuality: 0.85) else { throw LibraryError.message(String(localized: "This image could not be opened.")) }
+                     let dir = LibraryModel.documents.appendingPathComponent("madeira-art", isDirectory: true)
+                     try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+                     let name = entry.id.uuidString + ".jpg"; try jpeg.write(to: dir.appendingPathComponent(name), options: .atomic); entry.coverFile = name
+@@ -3245,7 +3245,7 @@ struct SteamSearchView: View {
+             .task(id: submitted) {
+                 guard !submitted.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+                 loading = true; error = nil
+-                do { let found = try await SteamCatalog.search(submitted); try Task.checkCancellation(); results = found; if found.isEmpty { error = "No matches. Try a different title." } }
++                do { let found = try await SteamCatalog.search(submitted); try Task.checkCancellation(); results = found; if found.isEmpty { error = String(localized: "No matches. Try a different title.") } }
+                 catch is CancellationError { return }
+                 catch { self.error = error.localizedDescription }
+                 loading = false
+diff --git a/app/Madeira/Localizable.xcstrings b/app/Madeira/Localizable.xcstrings
+new file mode 100644
+index 0000000..9f7486e
+--- /dev/null
++++ b/app/Madeira/Localizable.xcstrings
+@@ -0,0 +1,4426 @@
++{
++  "sourceLanguage" : "en",
++  "version" : "1.0",
++  "strings" : {
++    "%@ MB" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "%@ MB"
++          }
++        }
++      }
++    },
++    "%@ shortcut" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "“%@”快捷指令"
++          }
++        }
++      }
++    },
++    "%@-bit" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "%@ 位"
++          }
++        }
++      }
++    },
++    "%@MB" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "%@MB"
++          }
++        }
++      }
++    },
++    ".NET Framework" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : ".NET Framework"
++          }
++        }
++      }
++    },
++    ".NET Framework games will not start until you download it again." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "在重新下载之前，基于 .NET Framework 的游戏将无法启动。"
++          }
++        }
++      }
++    },
++    "30 FPS" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "30 FPS"
++          }
++        }
++      }
++    },
++    "40 FPS" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "40 FPS"
++          }
++        }
++      }
++    },
++    "60 FPS" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "60 FPS"
++          }
++        }
++      }
++    },
++    "A few optional steps get you ready:" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "完成以下几个可选步骤即可开始："
++          }
++        }
++      }
++    },
++    "A session is already running." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "已有会话正在运行。"
++          }
++        }
++      }
++    },
++    "AVX and AVX2" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "AVX 与 AVX2"
++          }
++        }
++      }
++    },
++    "About" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "关于"
++          }
++        }
++      }
++    },
++    "About 73 MB from Valve's update servers, checked against pinned SHA-256 sums. No Windows session runs for this." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "约 73 MB，来自 Valve 的更新服务器，并用固定的 SHA-256 校验。此过程不会运行 Windows 会话。"
++          }
++        }
++      }
++    },
++    "Absolute" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "绝对"
++          }
++        }
++      }
++    },
++    "Add .NET Framework support" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "添加 .NET Framework 支持"
++          }
++        }
++      }
++    },
++    "Add an entry" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "添加条目"
++          }
++        }
++      }
++    },
++    "Add program" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "添加程序"
++          }
++        }
++      }
++    },
++    "Add the %@ shortcut" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "添加“%@”快捷指令"
++          }
++        }
++      }
++    },
++    "Add the shortcut" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "添加快捷指令"
++          }
++        }
++      }
++    },
++    "Add to madeira.cfg" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "添加到 madeira.cfg"
++          }
++        }
++      }
++    },
++    "Advanced" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "高级"
++          }
++        }
++      }
++    },
++    "All settings" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "所有设置"
++          }
++        }
++      }
++    },
++    "All settings (%@ more)" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "所有设置（另有 %@ 项）"
++          }
++        }
++      }
++    },
++    "Appearance" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "外观"
++          }
++        }
++      }
++    },
++    "Application default" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "应用默认"
++          }
++        }
++      }
++    },
++    "Arrange buttons and choose XInput, mouse, or keyboard actions from the in-game menu." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "在游戏内菜单中排列按钮，并选择 XInput、鼠标或键盘操作。"
++          }
++        }
++      }
++    },
++    "Aspect & scaling" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "比例与缩放"
++          }
++        }
++      }
++    },
++    "Automatic" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "自动"
++          }
++        }
++      }
++    },
++    "Automatic uses StikDebug when it is installed. Madeira does not silently change methods after a failure." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "“自动”在已安装 StikDebug 时使用 StikDebug。失败后 Madeira 不会悄悄更换方式。"
++          }
++        }
++      }
++    },
++    "Available" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "可用"
++          }
++        }
++      }
++    },
++    "Back to options" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "返回选项"
++          }
++        }
++      }
++    },
++    "Back up saves" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "备份存档"
++          }
++        }
++      }
++    },
++    "Batch" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "批处理"
++          }
++        }
++      }
++    },
++    "Before you play, connect [LocalDevVPN](https://apps.apple.com/us/app/localdevvpn/id6755608044). Madeira enables JIT through it." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "开始之前，请先连接 [LocalDevVPN](https://apps.apple.com/us/app/localdevvpn/id6755608044)。Madeira 通过它启用 JIT。"
++          }
++        }
++      }
++    },
++    "Both apply to Direct3D 12 games only. Capture writes the render passes of the next frame to Documents/capture and its draw list to the log. GPU sync: F1 makes every pass wait for the one before (the default), F6 waits only where the game's barriers ask, F5 makes render passes wait at the fragment stage, F0 has no sync at all (expect flicker; for tests)." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "两项都只作用于 Direct3D 12 游戏。“捕获”会把下一帧的渲染通道写入 Documents/capture，并把绘制列表写入日志。GPU 同步：F1 让每个通道等待前一个通道（默认），F6 只在游戏的屏障要求时等待，F5 让渲染通道在片段阶段等待，F0 完全不同步（会闪烁，仅供测试）。"
++          }
++        }
++      }
++    },
++    "Browse all files" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "浏览所有文件"
++          }
++        }
++      }
++    },
++    "Built-in JIT is attached." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "内置 JIT 已附加。"
++          }
++        }
++      }
++    },
++    "Built-in StikJIT" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "内置 StikJIT"
++          }
++        }
++      }
++    },
++    "Built-in helper" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "内置助手"
++          }
++        }
++      }
++    },
++    "CAP" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "上限"
++          }
++        }
++      }
++    },
++    "CPU" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "CPU"
++          }
++        }
++      }
++    },
++    "CPU cores reported" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "报告的 CPU 核心数"
++          }
++        }
++      }
++    },
++    "Can be played offline" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "可离线游玩"
++          }
++        }
++      }
++    },
++    "Cancel" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "取消"
++          }
++        }
++      }
++    },
++    "Cancel pairing" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "取消配对"
++          }
++        }
++      }
++    },
++    "Capture the next frame" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "捕获下一帧"
++          }
++        }
++      }
++    },
++    "Cards" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "卡片"
++          }
++        }
++      }
++    },
++    "Check setup" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "检查设置"
++          }
++        }
++      }
++    },
++    "Checking LocalDevVPN and the Developer Disk Image…" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "正在检查 LocalDevVPN 和开发者磁盘映像…"
++          }
++        }
++      }
++    },
++    "Choose" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "选取"
++          }
++        }
++      }
++    },
++    "Choose a program in drive_c" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "从 drive_c 中选取程序"
++          }
++        }
++      }
++    },
++    "Choose an executable (.exe, .bat or .cmd) inside drive_c." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "请选取 drive_c 中的可执行文件（.exe、.bat 或 .cmd）。"
++          }
++        }
++      }
++    },
++    "Choose an image smaller than 20 MB." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "请选取小于 20 MB 的图片。"
++          }
++        }
++      }
++    },
++    "Choose another pairing file" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "选取其他配对文件"
++          }
++        }
++      }
++    },
++    "Choose cover image" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "选取封面图片"
++          }
++        }
++      }
++    },
++    "Choose pairing file" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "选取配对文件"
++          }
++        }
++      }
++    },
++    "Choose the program" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "选取要启动的程序"
++          }
++        }
++      }
++    },
++    "Clear Log" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "清除日志"
++          }
++        }
++      }
++    },
++    "Close Madeira" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "关闭 Madeira"
++          }
++        }
++      }
++    },
++    "Close Madeira from the app switcher and open it again to switch interfaces." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "请在 App 切换器中关闭 Madeira 后重新打开，以切换界面。"
++          }
++        }
++      }
++    },
++    "Close Madeira from the app switcher and open it again to use the new interface." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "请在 App 切换器中关闭 Madeira 后重新打开，以使用新界面。"
++          }
++        }
++      }
++    },
++    "Closes the running session. Unsaved progress will be lost." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "关闭正在运行的会话。未保存的进度将会丢失。"
++          }
++        }
++      }
++    },
++    "Compact cards" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "紧凑卡片"
++          }
++        }
++      }
++    },
++    "Compact list" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "紧凑列表"
++          }
++        }
++      }
++    },
++    "Compatibility & performance" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "兼容性与性能"
++          }
++        }
++      }
++    },
++    "Connect automatically" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "自动连接"
++          }
++        }
++      }
++    },
++    "Connect with %@" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "通过“%@”连接"
++          }
++        }
++      }
++    },
++    "Continue" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "继续"
++          }
++        }
++      }
++    },
++    "Control opacity" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "控件不透明度"
++          }
++        }
++      }
++    },
++    "Control size" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "控件大小"
++          }
++        }
++      }
++    },
++    "Controller" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "手柄"
++          }
++        }
++      }
++    },
++    "Controller binds" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "手柄按键绑定"
++          }
++        }
++      }
++    },
++    "Controller button for this action (keyboard & mouse mode)" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "此操作对应的手柄按键（键鼠模式）"
++          }
++        }
++      }
++    },
++    "Controller layout" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "手柄布局"
++          }
++        }
++      }
++    },
++    "Copy Home Screen shortcut link" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "拷贝主屏幕快捷方式链接"
++          }
++        }
++      }
++    },
++    "Copy a game's folder into Madeira › wine › drive_c with the Files app, then tap + and choose its .exe." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "用“文件” App 把游戏文件夹拷贝到 Madeira › wine › drive_c，然后轻点 + 并选取其中的 .exe。"
++          }
++        }
++      }
++    },
++    "Could not save the library: " : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "无法保存资料库："
++          }
++        }
++      }
++    },
++    "Could not write %@." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "无法写入 %@。"
++          }
++        }
++      }
++    },
++    "Could not write %@: %@" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "无法写入 %1$@：%2$@"
++          }
++        }
++      }
++    },
++    "Couldn't Enable JIT" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "无法启用 JIT"
++          }
++        }
++      }
++    },
++    "Create new layout" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "新建布局"
++          }
++        }
++      }
++    },
++    "Credits" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "致谢"
++          }
++        }
++      }
++    },
++    "Custom" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "自定义"
++          }
++        }
++      }
++    },
++    "Custom: %@" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "自定义：%@"
++          }
++        }
++      }
++    },
++    "D3D12 M2 ABI" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "D3D12 M2 ABI"
++          }
++        }
++      }
++    },
++    "D3D12 cube" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "D3D12 立方体"
++          }
++        }
++      }
++    },
++    "D3D9 anisotropic filtering" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "D3D9 各向异性过滤"
++          }
++        }
++      }
++    },
++    "Default" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "默认"
++          }
++        }
++      }
++    },
++    "Defaults: left stick WASD, right stick mouse, RT and LT click, D-pad arrows, A Space, B Ctrl, X E, Y R, LB Q, RB F, L3 Shift, R3 C, Start Esc, Select Tab. A touch control's own controller binding (control editor) applies when a row is at its default." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "默认：左摇杆 WASD，右摇杆鼠标，RT 和 LT 点击，十字键方向键，A 空格，B Ctrl，X E，Y R，LB Q，RB F，L3 Shift，R3 C，Start Esc，Select Tab。某一行保持默认时，触控控件自身的手柄绑定（控件编辑器）生效。"
++          }
++        }
++      }
++    },
++    "Delete" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "删除"
++          }
++        }
++      }
++    },
++    "Delete “%@" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "删除“%@"
++          }
++        }
++      }
++    },
++    "Delete “%@”" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "删除“%@”"
++          }
++        }
++      }
++    },
++    "Desktop" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "桌面"
++          }
++        }
++      }
++    },
++    "Device" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "设备"
++          }
++        }
++      }
++    },
++    "Diagnostics" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "诊断"
++          }
++        }
++      }
++    },
++    "Directly" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "直接启动"
++          }
++        }
++      }
++    },
++    "Directly: the game is Wine's first program, with no desktop; small windows such as launchers and message boxes are drawn over the game, a window drawn without DirectX that fills the screen is not. In the Wine desktop: the game starts inside the Wine desktop at the Resolution above, where every window shows." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "直接启动：游戏是 Wine 的第一个程序，没有桌面；启动器、消息框等小窗口会叠加在游戏上方，但不用 DirectX 绘制的全屏窗口不会显示。在 Wine 桌面中：游戏以上方的分辨率在 Wine 桌面里启动，所有窗口都会显示。"
++          }
++        }
++      }
++    },
++    "Dismiss" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "关闭"
++          }
++        }
++      }
++    },
++    "Display" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "显示"
++          }
++        }
++      }
++    },
++    "Display maximum" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "显示器最高"
++          }
++        }
++      }
++    },
++    "Done" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "完成"
++          }
++        }
++      }
++    },
++    "Done editing controls" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "完成编辑控件"
++          }
++        }
++      }
++    },
++    "Download Wine Mono" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "下载 Wine Mono"
++          }
++        }
++      }
++    },
++    "Download components" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "下载组件"
++          }
++        }
++      }
++    },
++    "Drag to move" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "拖移以移动"
++          }
++        }
++      }
++    },
++    "ECO" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "节能"
++          }
++        }
++      }
++    },
++    "Eco mode" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "节能模式"
++          }
++        }
++      }
++    },
++    "Eco mode starts every game with its threads at a low priority, which saves power but makes games run slower. Off by default. It is meant for loading screens: Eco mode in the in-game menu turns it on and off while a game runs." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "节能模式让每个游戏的线程以低优先级启动，更省电，但游戏会变慢。默认关闭。它适用于加载画面：游戏运行时可在游戏内菜单中开关节能模式。"
++          }
++        }
++      }
++    },
++    "Edit controls" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "编辑控件"
++          }
++        }
++      }
++    },
++    "Enable JIT" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "启用 JIT"
++          }
++        }
++      }
++    },
++    "Enable JIT before playing." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "请先启用 JIT 再开始。"
++          }
++        }
++      }
++    },
++    "Enable JIT with StikDebug" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "用 StikDebug 启用 JIT"
++          }
++        }
++      }
++    },
++    "Enter this code on your %@" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "在你的 %@ 上输入此代码"
++          }
++        }
++      }
++    },
++    "Every other option Madeira reads from madeira.cfg. JIT pool, video memory, the swap tier, the sync engine and eco mode are in Settings › Memory & sync. Most options are read when Madeira starts, so close it from the app switcher after a change. Default leaves the option out of the file. Swipe left on a row to reset it." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Madeira 从 madeira.cfg 读取的其他所有选项。JIT 池、显存、交换层、同步引擎和节能模式位于“设置 › 内存与同步”。大多数选项在 Madeira 启动时读取，因此更改后请在 App 切换器中关闭它。“默认”表示不把该选项写入文件。在某行上向左轻扫可将其复原。"
++          }
++        }
++      }
++    },
++    "Executable" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "可执行文件"
++          }
++        }
++      }
++    },
++    "Extended logging" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "详细日志"
++          }
++        }
++      }
++    },
++    "FPS limit" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "帧率上限"
++          }
++        }
++      }
++    },
++    "FPS:" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "帧率："
++          }
++        }
++      }
++    },
++    "Fast semaphore waits (experimental)" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "快速信号量等待（实验性）"
++          }
++        }
++      }
++    },
++    "Fast synchronization" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "快速同步"
++          }
++        }
++      }
++    },
++    "Fast synchronization and fast semaphore waits are Fastsync options. Choose Fastsync in Settings › Memory & sync to use them." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "“快速同步”和“快速信号量等待”是 Fastsync 的选项。请在“设置 › 内存与同步”中选择 Fastsync 后使用。"
++          }
++        }
++      }
++    },
++    "Files with the same names in C:\\users are overwritten." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "C:\\users 中的同名文件将被覆盖。"
++          }
++        }
++      }
++    },
++    "Find on Steam" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "在 Steam 上查找"
++          }
++        }
++      }
++    },
++    "Flowing chrome on the bars and the Desktop button. Off, they use the system's Liquid Glass." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "栏和“桌面”按钮上的流动金属效果。关闭时使用系统的液态玻璃。"
++          }
++        }
++      }
++    },
++    "Folder size" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "文件夹大小"
++          }
++        }
++      }
++    },
++    "For anything not listed, such as env.FEX_TSOENABLED = 1." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "用于未列出的选项，例如 env.FEX_TSOENABLED = 1。"
++          }
++        }
++      }
++    },
++    "Frame generation (experimental)" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "插帧（实验性）"
++          }
++        }
++      }
++    },
++    "Function keys" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "功能键"
++          }
++        }
++      }
++    },
++    "GPU sync" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "GPU 同步"
++          }
++        }
++      }
++    },
++    "Game details" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "游戏详情"
++          }
++        }
++      }
++    },
++    "Game menu" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "游戏菜单"
++          }
++        }
++      }
++    },
++    "Game's own support" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "游戏自带支持"
++          }
++        }
++      }
++    },
++    "Games built on Microsoft's .NET Framework run on Wine Mono, the Wine project's open-source .NET runtime. Madeira downloads it from WineHQ: about 42 MB, about 130 MB once installed." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "基于微软 .NET Framework 的游戏在 Wine Mono（Wine 项目的开源 .NET 运行时）上运行。Madeira 会从 WineHQ 下载它：约 42 MB，安装后约 130 MB。"
++          }
++        }
++      }
++    },
++    "Get LocalDevVPN" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "获取 LocalDevVPN"
++          }
++        }
++      }
++    },
++    "Get started" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "开始使用"
++          }
++        }
++      }
++    },
++    "Go to your library" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "前往资料库"
++          }
++        }
++      }
++    },
++    "Group by" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "分组方式"
++          }
++        }
++      }
++    },
++    "Hold the display at its maximum rate" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "保持显示器最高刷新率"
++          }
++        }
++      }
++    },
++    "Home Screen" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "主屏幕"
++          }
++        }
++      }
++    },
++    "How to create a pairing file" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "如何创建配对文件"
++          }
++        }
++      }
++    },
++    "I'll do this later" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "稍后再说"
++          }
++        }
++      }
++    },
++    "Import archive (zip or 7z)" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "导入压缩包（zip 或 7z）"
++          }
++        }
++      }
++    },
++    "Import failed" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "导入失败"
++          }
++        }
++      }
++    },
++    "Import pairing file" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "导入配对文件"
++          }
++        }
++      }
++    },
++    "Import this device's pairing file, connect LocalDevVPN, then check setup. The pairing file is kept in this device's Keychain. Pairing in Madeira needs iOS 27 or later." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "导入本设备的配对文件，连接 LocalDevVPN，然后检查设置。配对文件保存在本设备的钥匙串中。在 Madeira 内配对需要 iOS 27 或更高版本。"
++          }
++        }
++      }
++    },
++    "In the Shortcuts app: new shortcut, Open URLs, paste the link, then Share › Add to Home Screen." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "在“快捷指令” App 中：新建快捷指令，添加“打开 URL”，粘贴链接，然后选择“共享 › 添加到主屏幕”。"
++          }
++        }
++      }
++    },
++    "In the Wine desktop" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "在 Wine 桌面中"
++          }
++        }
++      }
++    },
++    "Install LocalDevVPN" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "安装 LocalDevVPN"
++          }
++        }
++      }
++    },
++    "Install StikDebug" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "安装 StikDebug"
++          }
++        }
++      }
++    },
++    "Installed" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "已安装"
++          }
++        }
++      }
++    },
++    "Interface" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "界面"
++          }
++        }
++      }
++    },
++    "Invalid executable header." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "可执行文件头无效。"
++          }
++        }
++      }
++    },
++    "JIT" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "JIT"
++          }
++        }
++      }
++    },
++    "JIT enabled" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "JIT 已启用"
++          }
++        }
++      }
++    },
++    "JIT is on, but the game could not start. Tap Play again." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "JIT 已开启，但游戏未能启动。请再次轻点“开始”。"
++          }
++        }
++      }
++    },
++    "JIT lets Madeira run Windows code. Choose how your %@ gets it." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "JIT 让 Madeira 能够运行 Windows 代码。请选择你的 %@ 获取 JIT 的方式。"
++          }
++        }
++      }
++    },
++    "JIT method" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "JIT 方式"
++          }
++        }
++      }
++    },
++    "JIT not enabled" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "JIT 未启用"
++          }
++        }
++      }
++    },
++    "JIT pool is the memory reserved at launch for translated x86 code (256 to 1152 MB; below 512 MB, large games can run out of room for it)." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "JIT 池是启动时为翻译后的 x86 代码预留的内存（256 至 1152 MB；低于 512 MB 时，大型游戏可能空间不足）。"
++          }
++        }
++      }
++    },
++    "JIT setup" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "JIT 设置"
++          }
++        }
++      }
++    },
++    "Keep as “%@”" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "保留为“%@”"
++          }
++        }
++      }
++    },
++    "Keep the current controls?" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "保留当前控件吗？"
++          }
++        }
++      }
++    },
++    "Keyboard" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "键盘"
++          }
++        }
++      }
++    },
++    "Keyboard and mouse" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "键盘和鼠标"
++          }
++        }
++      }
++    },
++    "Keyboard and mouse: for games without controller support. The controller presses keys and moves the mouse (left stick WASD, right stick mouse, triggers click, D-pad arrows, Start Esc, Select Tab) and the game sees no controller. Change what each button does under Controller binds, here or in the in-game menu." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "键盘和鼠标：用于不支持手柄的游戏。手柄会模拟按键和移动鼠标（左摇杆 WASD，右摇杆鼠标，扳机键点击，十字键方向键，Start Esc，Select Tab），游戏不会检测到手柄。可在此处或游戏内菜单的“手柄按键绑定”中更改每个按键的功能。"
++          }
++        }
++      }
++    },
++    "Last played" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "最近游玩"
++          }
++        }
++      }
++    },
++    "Last played %@" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "最近游玩：%@"
++          }
++        }
++      }
++    },
++    "Later" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "稍后"
++          }
++        }
++      }
++    },
++    "Launch" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "启动"
++          }
++        }
++      }
++    },
++    "Launch anyway" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "仍然启动"
++          }
++        }
++      }
++    },
++    "Launch arguments" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "启动参数"
++          }
++        }
++      }
++    },
++    "Letters" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "字母"
++          }
++        }
++      }
++    },
++    "Library" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "资料库"
++          }
++        }
++      }
++    },
++    "Library could not be opened. The original file was preserved. " : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "无法打开资料库。原始文件已保留。"
++          }
++        }
++      }
++    },
++    "Library details" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "资料库信息"
++          }
++        }
++      }
++    },
++    "Library layout" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "资料库布局"
++          }
++        }
++      }
++    },
++    "Library options" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "资料库选项"
++          }
++        }
++      }
++    },
++    "Lines in madeira.cfg's format for this game only. A key set here wins over madeira.cfg wherever the runtime reads it, env.NAME lines are exported after madeira.cfg's, and dxmt options are added to madeira.cfg's. Applies from the next start." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "仅对此游戏生效的 madeira.cfg 格式配置行。此处设置的键优先于 madeira.cfg；env.NAME 行在 madeira.cfg 之后导出；dxmt 选项会追加到 madeira.cfg 的设置中。下次启动时生效。"
++          }
++        }
++      }
++    },
++    "Link copied" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "链接已拷贝"
++          }
++        }
++      }
++    },
++    "Liquid metal" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "液态金属"
++          }
++        }
++      }
++    },
++    "List" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "列表"
++          }
++        }
++      }
++    },
++    "Live diagnostic log" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "实时诊断日志"
++          }
++        }
++      }
++    },
++    "Live logs" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "实时日志"
++          }
++        }
++      }
++    },
++    "LocalDevVPN is installed" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "已安装 LocalDevVPN"
++          }
++        }
++      }
++    },
++    "LocalDevVPN reaches this device." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "LocalDevVPN 可以连接到本设备。"
++          }
++        }
++      }
++    },
++    "Lock pointer (Ctrl+Alt+P)" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "锁定指针（Ctrl+Alt+P）"
++          }
++        }
++      }
++    },
++    "Madeira" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Madeira"
++          }
++        }
++      }
++    },
++    "Madeira Dock" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Madeira Dock"
++          }
++        }
++      }
++    },
++    "Madeira Dock starts your installed Steam games through Valve's own Steam client, without the Steam desktop window. It needs the client's components, which Madeira downloads from Valve." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Madeira Dock 通过 Valve 官方的 Steam 客户端启动已安装的 Steam 游戏，不显示 Steam 桌面窗口。它需要客户端组件，Madeira 会从 Valve 下载。"
++          }
++        }
++      }
++    },
++    "Madeira Dock stopped" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Madeira Dock 已停止"
++          }
++        }
++      }
++    },
++    "Madeira downloads it from WineHQ: about 42 MB, about 130 MB once installed. Most games do not need it; you can also add it later in Settings." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Madeira 会从 WineHQ 下载：约 42 MB，安装后约 130 MB。大多数游戏不需要它；你也可以稍后在“设置”中添加。"
++          }
++        }
++      }
++    },
++    "Madeira enables JIT through LocalDevVPN, a free app that gives Madeira a network path to this %@. Install it from the App Store, then come back." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Madeira 通过 LocalDevVPN 启用 JIT。这是一款免费 App，为 Madeira 提供连接到这台 %@ 的网络通道。请从 App Store 安装后再回来。"
++          }
++        }
++      }
++    },
++    "Madeira is a proof-of-concept for running x86 Windows games on iOS using FEX-Emu, Wine, and Metal-based graphics translation." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Madeira 是一个概念验证项目：借助 FEX-Emu、Wine 和基于 Metal 的图形转换，在 iOS 上运行 x86 Windows 游戏。"
++          }
++        }
++      }
++    },
++    "Madeira is built on Wine, FEX-Emu, DXMT by Feifan He (3Shain) with the Direct3D 9 frontend by David Acevedo (dacevedo12), rpmalloc by Mattias Jansson, StikDebug, StikJIT and idevice. Thank you to everyone who contributes to these projects." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Madeira 基于 Wine、FEX-Emu、Feifan He（3Shain）开发的 DXMT 及 David Acevedo（dacevedo12）开发的 Direct3D 9 前端、Mattias Jansson 开发的 rpmalloc、StikDebug、StikJIT 和 idevice 构建。感谢所有为这些项目做出贡献的人。"
++          }
++        }
++      }
++    },
++    "Madeira keeps a Steam sign-in so it can start your Steam games with your own account." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Madeira 会保存 Steam 登录信息，以便用你自己的账户启动 Steam 游戏。"
++          }
++        }
++      }
++    },
++    "Madeira keeps a Steam sign-in token in this device's Keychain, for this device only. Signing out removes it." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Madeira 会把 Steam 登录令牌保存在本设备的钥匙串中，仅限本设备使用。退出登录会将其移除。"
++          }
++        }
++      }
++    },
++    "Madeira runs Windows games on your %@" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Madeira 在你的 %@ 上运行 Windows 游戏"
++          }
++        }
++      }
++    },
++    "Make yourself at home" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "欢迎，请随意"
++          }
++        }
++      }
++    },
++    "Memory & sync" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "内存与同步"
++          }
++        }
++      }
++    },
++    "Memory+" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "内存+"
++          }
++        }
++      }
++    },
++    "Menu" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "菜单"
++          }
++        }
++      }
++    },
++    "MetalFX upscaling" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "MetalFX 超分辨率"
++          }
++        }
++      }
++    },
++    "MetalFX upscaling renders at the resolution above and scales the picture up with Apple's MetalFX spatial scaler before it reaches the screen (Direct3D 11 and 12 programs). Use it with a small resolution for frame rate." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "MetalFX 超分辨率以上方的分辨率渲染，再用 Apple 的 MetalFX 空间缩放器放大画面后显示（适用于 Direct3D 11 和 12 程序）。配合较低的分辨率使用可提升帧率。"
++          }
++        }
++      }
++    },
++    "Method" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "方式"
++          }
++        }
++      }
++    },
++    "Missing PE header." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "缺少 PE 文件头。"
++          }
++        }
++      }
++    },
++    "Modifiers & editing" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "修饰键与编辑"
++          }
++        }
++      }
++    },
++    "Most options are read when Madeira starts: close it from the app switcher after a change." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "大多数选项在 Madeira 启动时读取：更改后请在 App 切换器中关闭它。"
++          }
++        }
++      }
++    },
++    "Mouse & pointer" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "鼠标与指针"
++          }
++        }
++      }
++    },
++    "Mouse sensitivity" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "鼠标灵敏度"
++          }
++        }
++      }
++    },
++    "Name" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "名称"
++          }
++        }
++      }
++    },
++    "Navigation" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "导航"
++          }
++        }
++      }
++    },
++    "New in Madeira" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Madeira 新功能"
++          }
++        }
++      }
++    },
++    "No executables here. Copy files into Madeira/wine/drive_c using Files." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "此处没有可执行文件。请用“文件” App 把文件拷贝到 Madeira/wine/drive_c。"
++          }
++        }
++      }
++    },
++    "No games match your search." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "没有符合搜索条件的游戏。"
++          }
++        }
++      }
++    },
++    "No internet connection? Add local copy" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "没有网络？添加本地副本"
++          }
++        }
++      }
++    },
++    "No internet connection? Add local copy, then choose the Shortcuts app in the share sheet that pops up." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "没有网络？添加本地副本，然后在弹出的共享表单中选择“快捷指令” App。"
++          }
++        }
++      }
++    },
++    "No matches. Try a different title." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "没有匹配项。请尝试其他标题。"
++          }
++        }
++      }
++    },
++    "No other games match your search." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "没有其他符合搜索条件的游戏。"
++          }
++        }
++      }
++    },
++    "No other options match “%@”." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "没有其他选项与“%@”匹配。"
++          }
++        }
++      }
++    },
++    "None" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "无"
++          }
++        }
++      }
++    },
++    "Not detected" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "未检测到"
++          }
++        }
++      }
++    },
++    "Not present" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "不存在"
++          }
++        }
++      }
++    },
++    "Not ready for offline play yet" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "尚不能离线游玩"
++          }
++        }
++      }
++    },
++    "Numbers" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "数字"
++          }
++        }
++      }
++    },
++    "Numpad" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "数字小键盘"
++          }
++        }
++      }
++    },
++    "OK" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "好"
++          }
++        }
++      }
++    },
++    "Off" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "关"
++          }
++        }
++      }
++    },
++    "Off by default. On a 120 Hz display, keeps the panel at 120 Hz during a game's 60 FPS limit so a frame that misses one refresh waits 8 ms instead of 17 ms. Uses more power." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "默认关闭。在 120 Hz 显示屏上，即使游戏限制为 60 FPS 也让屏幕保持 120 Hz，错过一次刷新的帧只需等待 8 毫秒而不是 17 毫秒。会更耗电。"
++          }
++        }
++      }
++    },
++    "On" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "开"
++          }
++        }
++      }
++    },
++    "On screen" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "屏幕上"
++          }
++        }
++      }
++    },
++    "One key = value per line, as in madeira.cfg; lines starting with # are comments. Examples: fence-chain = 6, dxmt = d3d11.mipClampBC=1, env.FEX_MULTIBLOCK = 1." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "每行一个 key = value，格式同 madeira.cfg；以 # 开头的行是注释。示例：fence-chain = 6、dxmt = d3d11.mipClampBC=1、env.FEX_MULTIBLOCK = 1。"
++          }
++        }
++      }
++    },
++    "Only x86 and x64 executables are supported." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "仅支持 x86 和 x64 可执行文件。"
++          }
++        }
++      }
++    },
++    "Opacity" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "不透明度"
++          }
++        }
++      }
++    },
++    "Open JIT Setup" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "打开 JIT 设置"
++          }
++        }
++      }
++    },
++    "Open Settings › Privacy & Security › Developer Mode, scroll down and tap **Pair with %@**. Keep Wi-Fi on." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "打开“设置 › 隐私与安全性 › 开发者模式”，向下滚动并轻点 **与“%@”配对**。请保持 Wi-Fi 打开。"
++          }
++        }
++      }
++    },
++    "Options" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "选项"
++          }
++        }
++      }
++    },
++    "Options (%@)" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "选项（%@）"
++          }
++        }
++      }
++    },
++    "Other entries in madeira.cfg" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "madeira.cfg 中的其他条目"
++          }
++        }
++      }
++    },
++    "Pair Again" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "重新配对"
++          }
++        }
++      }
++    },
++    "Pair again" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "重新配对"
++          }
++        }
++      }
++    },
++    "Pair in Madeira" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "在 Madeira 中配对"
++          }
++        }
++      }
++    },
++    "Pair in Madeira again" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "在 Madeira 中重新配对"
++          }
++        }
++      }
++    },
++    "Pair in Madeira or import a pairing file made on a computer, connect LocalDevVPN, then check setup. The pairing file is kept in this device's Keychain." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "在 Madeira 中配对，或导入在电脑上生成的配对文件，连接 LocalDevVPN，然后检查设置。配对文件保存在本设备的钥匙串中。"
++          }
++        }
++      }
++    },
++    "Pair on this %@" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "在这台 %@ 上配对"
++          }
++        }
++      }
++    },
++    "Pair this device or import its pairing file to finish Built-in StikJIT setup." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "请为本设备配对或导入其配对文件，以完成内置 StikJIT 的设置。"
++          }
++        }
++      }
++    },
++    "Paired in Madeira." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "已在 Madeira 中配对。"
++          }
++        }
++      }
++    },
++    "Paired on this %@" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "已在这台 %@ 上配对"
++          }
++        }
++      }
++    },
++    "Paired with %@" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "已与“%@”配对"
++          }
++        }
++      }
++    },
++    "Pairing" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "配对"
++          }
++        }
++      }
++    },
++    "Pairing code %@" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "配对代码 %@"
++          }
++        }
++      }
++    },
++    "Pairing file imported" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "已导入配对文件"
++          }
++        }
++      }
++    },
++    "Pairing file imported." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "已导入配对文件。"
++          }
++        }
++      }
++    },
++    "Passed to the program on every start; the line above is the command that runs. The flags add or remove themselves; the renderer flags exclude each other, as do -windowed and -fullscreen." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "每次启动时传给程序；上面一行是实际运行的命令。各标志可单独添加或移除；渲染器标志互斥，-windowed 与 -fullscreen 也互斥。"
++          }
++        }
++      }
++    },
++    "Performance overlay" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "性能叠加层"
++          }
++        }
++      }
++    },
++    "Platform" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "平台"
++          }
++        }
++      }
++    },
++    "Play" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "开始"
++          }
++        }
++      }
++    },
++    "Pointer" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "指针"
++          }
++        }
++      }
++    },
++    "Pointer mode" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "指针模式"
++          }
++        }
++      }
++    },
++    "Prepare Madeira Dock" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "准备 Madeira Dock"
++          }
++        }
++      }
++    },
++    "Present" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "存在"
++          }
++        }
++      }
++    },
++    "Present:" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "存在："
++          }
++        }
++      }
++    },
++    "Quit game" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "退出游戏"
++          }
++        }
++      }
++    },
++    "Ready to play" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "准备就绪"
++          }
++        }
++      }
++    },
++    "Recently added" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "最近添加"
++          }
++        }
++      }
++    },
++    "Reduced-precision x87" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "降低 x87 精度"
++          }
++        }
++      }
++    },
++    "Reduced-precision x87 can make older games faster at some cost in accuracy; it is off by default. Turn on AVX and AVX2 (off by default, 64-bit games) when a game built for AVX processors quits at start with an illegal instruction (c000001d); FEX then emulates AVX, which is slower. Report an NVIDIA GPU is for games that stop with \"no graphics card\" or \"failed to get GPU driver info\". With Fastsync, fast synchronization (on by default) handles events without a server round trip, and fast semaphore waits (off by default) does the same for semaphores. Settings apply to the next launch; a precision change may still require restarting Madeira." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "“降低 x87 精度”能以一定的精确度为代价让较老的游戏运行得更快，默认关闭。如果为 AVX 处理器构建的游戏在启动时因非法指令（c000001d）退出，请打开“AVX 与 AVX2”（默认关闭，适用于 64 位游戏）；此时 FEX 会模拟 AVX，速度较慢。“报告为 NVIDIA GPU”适用于提示“no graphics card”或“failed to get GPU driver info”而停止的游戏。使用 Fastsync 时，“快速同步”（默认开启）无需往返服务器即可处理事件，“快速信号量等待”（默认关闭）对信号量做同样的处理。设置在下次启动时生效；更改精度可能仍需重新启动 Madeira。"
++          }
++        }
++      }
++    },
++    "Relative" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "相对"
++          }
++        }
++      }
++    },
++    "Relative to horizontal. Games scale the camera's pitch and yaw differently from a mouse; lower this if the view climbs faster than it turns." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "相对于水平方向。游戏对镜头俯仰和偏航的缩放与鼠标不同；如果视角上下移动比左右转动快，请调低此值。"
++          }
++        }
++      }
++    },
++    "Remove" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "移除"
++          }
++        }
++      }
++    },
++    "Remove Wine Mono" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "移除 Wine Mono"
++          }
++        }
++      }
++    },
++    "Remove Wine Mono?" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "要移除 Wine Mono 吗？"
++          }
++        }
++      }
++    },
++    "Remove cover image" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "移除封面图片"
++          }
++        }
++      }
++    },
++    "Remove from library" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "从资料库中移除"
++          }
++        }
++      }
++    },
++    "Remove this library entry? Your executable and saves stay in drive_c." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "要移除此资料库条目吗？你的可执行文件和存档仍保留在 drive_c 中。"
++          }
++        }
++      }
++    },
++    "Replace" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "替换"
++          }
++        }
++      }
++    },
++    "Report an NVIDIA GPU" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "报告为 NVIDIA GPU"
++          }
++        }
++      }
++    },
++    "Requirements" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "要求"
++          }
++        }
++      }
++    },
++    "Reset" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "复原"
++          }
++        }
++      }
++    },
++    "Reset Developer Disk Image" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "复原开发者磁盘映像"
++          }
++        }
++      }
++    },
++    "Reset all to defaults" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "全部复原为默认值"
++          }
++        }
++      }
++    },
++    "Resetting the Developer Disk Image cache…" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "正在复原开发者磁盘映像缓存…"
++          }
++        }
++      }
++    },
++    "Resolution" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "分辨率"
++          }
++        }
++      }
++    },
++    "Restart Madeira" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "重新启动 Madeira"
++          }
++        }
++      }
++    },
++    "Restart Madeira (close it from the app switcher) for changes to apply." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "重新启动 Madeira（在 App 切换器中关闭它）以使更改生效。"
++          }
++        }
++      }
++    },
++    "Restart Madeira (close it from the app switcher) for these changes to apply." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "重新启动 Madeira（在 App 切换器中关闭它）以使这些更改生效。"
++          }
++        }
++      }
++    },
++    "Restore" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "恢复"
++          }
++        }
++      }
++    },
++    "Restore saves from %@" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "从 %@ 恢复存档"
++          }
++        }
++      }
++    },
++    "Restore saves from a backup…" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "从备份恢复存档…"
++          }
++        }
++      }
++    },
++    "Right stick as mouse" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "右摇杆作为鼠标"
++          }
++        }
++      }
++    },
++    "Right stick controls mouse" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "右摇杆控制鼠标"
++          }
++        }
++      }
++    },
++    "Run setup again" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "重新运行设置"
++          }
++        }
++      }
++    },
++    "Running the %@ shortcut…" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "正在运行“%@”快捷指令…"
++          }
++        }
++      }
++    },
++    "Runs the game's threads at a low priority, on the efficiency cores: cooler and slower. Use it while a game loads and turn it off to play." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "以低优先级在能效核心上运行游戏线程：温度更低，速度更慢。可在游戏加载时使用，正式游玩时关闭。"
++          }
++        }
++      }
++    },
++    "Saves" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "存档"
++          }
++        }
++      }
++    },
++    "Searching Steam…" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "正在搜索 Steam…"
++          }
++        }
++      }
++    },
++    "Select" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Select"
++          }
++        }
++      }
++    },
++    "Session" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "会话"
++          }
++        }
++      }
++    },
++    "Set in your madeira.cfg but not read by name in Madeira's code, for example FEX options passed as env.FEX_*." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "已在 madeira.cfg 中设置但 Madeira 代码不会按名称读取的选项，例如以 env.FEX_* 传递的 FEX 选项。"
++          }
++        }
++      }
++    },
++    "Set up JIT" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "设置 JIT"
++          }
++        }
++      }
++    },
++    "Set up later" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "稍后设置"
++          }
++        }
++      }
++    },
++    "Settings" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "设置"
++          }
++        }
++      }
++    },
++    "Settings › .NET Framework downloads or removes Wine Mono." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "可在“设置 › .NET Framework”中下载或移除 Wine Mono。"
++          }
++        }
++      }
++    },
++    "Settings › Steam › Madeira Dock lists the Steam games installed in Madeira's drive_c and starts them." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "“设置 › Steam › Madeira Dock”会列出并启动安装在 Madeira 的 drive_c 中的 Steam 游戏。"
++          }
++        }
++      }
++    },
++    "Setup Guide" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "设置指南"
++          }
++        }
++      }
++    },
++    "Setup Steps" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "设置步骤"
++          }
++        }
++      }
++    },
++    "Show game view" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "显示游戏画面"
++          }
++        }
++      }
++    },
++    "Showing %@ of %@. Refine the search, or open All settings." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "显示 %1$@ 项，共 %2$@ 项。请细化搜索，或打开“所有设置”。"
++          }
++        }
++      }
++    },
++    "Shows a MetalFX-generated frame between every two rendered frames: twice the frames on screen, at the cost of GPU time, some latency and artifacts at edges and on the HUD. FPS limits do not apply while it is on." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "在每两个渲染帧之间插入一个由 MetalFX 生成的帧：屏幕上的帧数翻倍，代价是 GPU 时间、一定的延迟，以及边缘和 HUD 上的瑕疵。开启时帧率上限不生效。"
++          }
++        }
++      }
++    },
++    "Shows the Windows desktop" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "显示 Windows 桌面"
++          }
++        }
++      }
++    },
++    "Sign in to Steam" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "登录 Steam"
++          }
++        }
++      }
++    },
++    "Sign out" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "退出登录"
++          }
++        }
++      }
++    },
++    "Sign out of Steam" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "退出 Steam"
++          }
++        }
++      }
++    },
++    "Sign out of Steam?" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "要退出 Steam 吗？"
++          }
++        }
++      }
++    },
++    "Signed in as" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "登录身份"
++          }
++        }
++      }
++    },
++    "Signed in as %@" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "已登录为 %@"
++          }
++        }
++      }
++    },
++    "Since you last ran setup, Madeira has something new to set up:" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "自上次运行设置以来，Madeira 有新的项目需要设置："
++          }
++        }
++      }
++    },
++    "Size" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "大小"
++          }
++        }
++      }
++    },
++    "Skip setup" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "跳过设置"
++          }
++        }
++      }
++    },
++    "Some Windows games are built on Microsoft's .NET Framework. Madeira runs them on Wine Mono, the Wine project's open-source .NET runtime." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "部分 Windows 游戏基于微软的 .NET Framework。Madeira 使用 Wine Mono（Wine 项目的开源 .NET 运行时）运行它们。"
++          }
++        }
++      }
++    },
++    "Sort by" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "排序方式"
++          }
++        }
++      }
++    },
++    "Start" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Start"
++          }
++        }
++      }
++    },
++    "Start Windows services first" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "先启动 Windows 服务"
++          }
++        }
++      }
++    },
++    "Start pairing" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "开始配对"
++          }
++        }
++      }
++    },
++    "Started directly, Wine stops when its first program exits, so a batch file that starts the game and exits closes the game too. Start it in the Wine desktop instead." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "直接启动时，Wine 会在第一个程序退出时停止，因此启动游戏后即退出的批处理文件也会把游戏一起关闭。请改为在 Wine 桌面中启动。"
++          }
++        }
++      }
++    },
++    "Starting JIT" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "正在启动 JIT"
++          }
++        }
++      }
++    },
++    "Starting Madeira's JIT helper…" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "正在启动 Madeira 的 JIT 助手…"
++          }
++        }
++      }
++    },
++    "Starting your game…" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "正在启动游戏…"
++          }
++        }
++      }
++    },
++    "Steam" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Steam"
++          }
++        }
++      }
++    },
++    "Steam Cloud" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Steam 云"
++          }
++        }
++      }
++    },
++    "Steam Testing" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Steam 测试"
++          }
++        }
++      }
++    },
++    "Steam sign-in" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Steam 登录"
++          }
++        }
++      }
++    },
++    "Step %@ of %@" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "第 %1$@ 步，共 %2$@ 步"
++          }
++        }
++      }
++    },
++    "StikDebug" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "StikDebug"
++          }
++        }
++      }
++    },
++    "StikDebug is not installed. Install it or choose Built-in StikJIT." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "未安装 StikDebug。请安装它，或选择内置 StikJIT。"
++          }
++        }
++      }
++    },
++    "StikDebug needs a pairing file and an active LocalDevVPN connection. Madeira sends its own script automatically." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "StikDebug 需要配对文件和已连接的 LocalDevVPN。Madeira 会自动发送它自己的脚本。"
++          }
++        }
++      }
++    },
++    "Still starting…" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "仍在启动…"
++          }
++        }
++      }
++    },
++    "Stray (UE4, -dx11)" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Stray（UE4，-dx11）"
++          }
++        }
++      }
++    },
++    "Swap coverage" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "交换覆盖范围"
++          }
++        }
++      }
++    },
++    "Swap tier moves game data to a file on this device's storage when memory runs short, up to the chosen size, at some speed cost. Coverage decides which allocations it moves: large ones only (8 MB and up, the default), every allocation of 1 MB and up, or those plus allocations that overflow the game's address range. Broad backs every new reservation of 4 MB and up (madeira.cfg swap-min-mb moves the floor) as it is made, so the small commits games make inside it are covered too, and the swap tier size limits the storage it uses. Wider coverage saves more memory but can slow a game down." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "交换层会在内存不足时把游戏数据移到本设备存储上的文件中，最多到所选大小，会损失一些速度。覆盖范围决定移动哪些内存分配：仅大型分配（8 MB 及以上，默认）、所有 1 MB 及以上的分配，或者再加上超出游戏地址范围的分配。“广泛”会在每次新建 4 MB 及以上的预留时就为其提供后备（可用 madeira.cfg 的 swap-min-mb 调整下限），因此游戏在其中的小块提交也会被覆盖，交换层大小限制其占用的存储。覆盖越广越省内存，但可能让游戏变慢。"
++          }
++        }
++      }
++    },
++    "Symbols" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "符号"
++          }
++        }
++      }
++    },
++    "Sync engine" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "同步引擎"
++          }
++        }
++      }
++    },
++    "Sync engine: Fastsync (the default) handles events and semaphores in-process; its per-game options are in each game's details. Madsync is the older in-process engine. Wine standard sync uses neither. Only one engine runs at a time." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "同步引擎：Fastsync（默认）在进程内处理事件和信号量，其每个游戏的选项位于各游戏详情中。Madsync 是较早的进程内引擎。Wine 标准同步两者都不用。同一时间只运行一个引擎。"
++          }
++        }
++      }
++    },
++    "TXM/SPTM" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "TXM/SPTM"
++          }
++        }
++      }
++    },
++    "Tap the screen to position and click. Hold and move to drag. Two fingers: right click or scroll." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "轻点屏幕以定位并点击。按住并移动以拖移。双指：右键点击或滚动。"
++          }
++        }
++      }
++    },
++    "The %@ shortcut did not run: %@." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "“%1$@”快捷指令未能运行：%2$@。"
++          }
++        }
++      }
++    },
++    "The archive contains a file that would be written outside its folder, so it was not imported." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "压缩包中有文件会被写到其文件夹之外，因此未导入。"
++          }
++        }
++      }
++    },
++    "The archive could not be read." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "无法读取压缩包。"
++          }
++        }
++      }
++    },
++    "The archive ended in the middle of a file." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "压缩包在文件中途结束。"
++          }
++        }
++      }
++    },
++    "The archive has a damaged header." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "压缩包的文件头已损坏。"
++          }
++        }
++      }
++    },
++    "The archive is damaged: a file does not match its checksum." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "压缩包已损坏：有文件与其校验值不符。"
++          }
++        }
++      }
++    },
++    "The archive is password-protected. Unpack it on a computer and pack it again without a password." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "压缩包设有密码。请在电脑上解压后不加密码重新打包。"
++          }
++        }
++      }
++    },
++    "The archive uses a compression method Madeira cannot unpack, or its file names are encrypted." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "压缩包使用了 Madeira 无法解压的压缩方式，或者其文件名已加密。"
++          }
++        }
++      }
++    },
++    "The archive was unpacked to C:\\Programs\\%@, but it contains no .exe, .bat or .cmd file." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "压缩包已解压到 C:\\Programs\\%@，但其中没有 .exe、.bat 或 .cmd 文件。"
++          }
++        }
++      }
++    },
++    "The complete launch command is too long." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "完整的启动命令过长。"
++          }
++        }
++      }
++    },
++    "The controls on screen are not saved in a layout." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "屏幕上的控件尚未保存为布局。"
++          }
++        }
++      }
++    },
++    "The developer interface is Madeira's original diagnostic screen. The change applies after Madeira restarts." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "开发者界面是 Madeira 原有的诊断界面。更改在 Madeira 重新启动后生效。"
++          }
++        }
++      }
++    },
++    "The download does not match the pinned Wine Mono %@." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "下载内容与固定版本的 Wine Mono %@ 不符。"
++          }
++        }
++      }
++    },
++    "The download ended early." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "下载提前结束。"
++          }
++        }
++      }
++    },
++    "The download is not a readable xz archive." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "下载内容不是可读取的 xz 压缩包。"
++          }
++        }
++      }
++    },
++    "The executable must be inside drive_c." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "可执行文件必须位于 drive_c 中。"
++          }
++        }
++      }
++    },
++    "The executable path or launch arguments are too long." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "可执行文件路径或启动参数过长。"
++          }
++        }
++      }
++    },
++    "The game starts this program directly, without Steam." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "游戏将直接启动此程序，不经过 Steam。"
++          }
++        }
++      }
++    },
++    "The launch state changed. Enable JIT and try again." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "启动状态已改变。请启用 JIT 后重试。"
++          }
++        }
++      }
++    },
++    "The library file could not be read. Preserve or repair it before making changes." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "无法读取资料库文件。请先保留或修复它，再进行更改。"
++          }
++        }
++      }
++    },
++    "The pairing file is kept in this %@'s Keychain." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "配对文件保存在这台 %@ 的钥匙串中。"
++          }
++        }
++      }
++    },
++    "The patched mscorlib.dll does not match the pinned result." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "修补后的 mscorlib.dll 与固定的结果不符。"
++          }
++        }
++      }
++    },
++    "The saved launch profile contains an invalid launch mode." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "已存储的启动配置包含无效的启动方式。"
++          }
++        }
++      }
++    },
++    "The saved launch profile contains invalid display or argument values." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "已存储的启动配置包含无效的显示或参数值。"
++          }
++        }
++      }
++    },
++    "The sign-in is kept in this device's Keychain until you sign out." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "登录信息会保存在本设备的钥匙串中，直到你退出登录。"
++          }
++        }
++      }
++    },
++    "The working folder is a C:\\ path, for example C:\\Games\\Some Game. Start Windows services first is for launchers that need them (Steam-style COM); Madeira writes a batch file for it in C:\\madeira-games." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "工作文件夹是一个 C:\\ 路径，例如 C:\\Games\\Some Game。“先启动 Windows 服务”用于需要这些服务的启动器（Steam 式 COM）；Madeira 会在 C:\\madeira-games 中为此写入一个批处理文件。"
++          }
++        }
++      }
++    },
++    "The working folder must be an existing folder on drive C:, such as C:\\Games\\Some Game." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "工作文件夹必须是 C: 盘上已存在的文件夹，例如 C:\\Games\\Some Game。"
++          }
++        }
++      }
++    },
++    "The xz decoder could not start." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "xz 解码器无法启动。"
++          }
++        }
++      }
++    },
++    "There was not enough memory to unpack the archive." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "内存不足，无法解压该压缩包。"
++          }
++        }
++      }
++    },
++    "This 7z archive needs more memory to unpack than is available. Pack it again as a zip, or as a 7z with a smaller dictionary." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "解压这个 7z 压缩包需要的内存超过了可用内存。请重新打包为 zip，或使用较小字典的 7z。"
++          }
++        }
++      }
++    },
++    "This game's config" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "此游戏的配置"
++          }
++        }
++      }
++    },
++    "This game's config is too long." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "此游戏的配置过长。"
++          }
++        }
++      }
++    },
++    "This game's update has not finished. Resume it and wait for it to complete before playing." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "此游戏的更新尚未完成。请继续更新并等待完成后再开始。"
++          }
++        }
++      }
++    },
++    "This image could not be opened." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "无法打开此图片。"
++          }
++        }
++      }
++    },
++    "This installation can only wait about 30 seconds in the background, so go to Settings straight away." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "此安装在后台只能等待约 30 秒，请立即前往“设置”。"
++          }
++        }
++      }
++    },
++    "This is not a Windows executable." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "这不是 Windows 可执行文件。"
++          }
++        }
++      }
++    },
++    "This is not a zip or 7z archive, or the archive is damaged." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "这不是 zip 或 7z 压缩包，或者压缩包已损坏。"
++          }
++        }
++      }
++    },
++    "This library uses a newer format." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "此资料库使用了较新的格式。"
++          }
++        }
++      }
++    },
++    "This shortcut's game is not in the library. Add it to the library, then use the shortcut again." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "此快捷方式对应的游戏不在资料库中。请将其添加到资料库后再使用此快捷方式。"
++          }
++        }
++      }
++    },
++    "Thumper (standalone)" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Thumper（独立版）"
++          }
++        }
++      }
++    },
++    "Title" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "标题"
++          }
++        }
++      }
++    },
++    "Touch" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "触控"
++          }
++        }
++      }
++    },
++    "Touch controls" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "触控控件"
++          }
++        }
++      }
++    },
++    "Touch sensitivity" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "触控灵敏度"
++          }
++        }
++      }
++    },
++    "Try again" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "重试"
++          }
++        }
++      }
++    },
++    "Unavailable" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "不可用"
++          }
++        }
++      }
++    },
++    "Uncapped" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "不限"
++          }
++        }
++      }
++    },
++    "Unlock pointer (Ctrl+Alt+P)" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "解锁指针（Ctrl+Alt+P）"
++          }
++        }
++      }
++    },
++    "Unpacked to C:\\Programs\\%@. Installers and uninstallers are listed last." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "已解压到 C:\\Programs\\%@。安装程序和卸载程序列在最后。"
++          }
++        }
++      }
++    },
++    "Unpacking" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "正在解压"
++          }
++        }
++      }
++    },
++    "Unpacking failed." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "解压失败。"
++          }
++        }
++      }
++    },
++    "Up to %@×" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "最高 %@×"
++          }
++        }
++      }
++    },
++    "Use New Interface" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "使用新界面"
++          }
++        }
++      }
++    },
++    "Use Steam artwork" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "使用 Steam 插图"
++          }
++        }
++      }
++    },
++    "Use StikDebug" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "使用 StikDebug"
++          }
++        }
++      }
++    },
++    "Use a different account" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "使用其他账户"
++          }
++        }
++      }
++    },
++    "Use a pairing file" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "使用配对文件"
++          }
++        }
++      }
++    },
++    "Use balanced double quotes and at most 64 launch arguments in total." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "请使用成对的双引号，且启动参数总数不超过 64 个。"
++          }
++        }
++      }
++    },
++    "Use developer interface" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "使用开发者界面"
++          }
++        }
++      }
++    },
++    "Use it for JIT" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "用于 JIT"
++          }
++        }
++      }
++    },
++    "Valley of the Ancient (UE5)" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Valley of the Ancient（UE5）"
++          }
++        }
++      }
++    },
++    "Valve's client components are installed." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Valve 客户端组件已安装。"
++          }
++        }
++      }
++    },
++    "Valve's client starts the game's default Steam launch option from this folder." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Valve 客户端会从此文件夹启动游戏的默认 Steam 启动选项。"
++          }
++        }
++      }
++    },
++    "Vertical speed" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "垂直速度"
++          }
++        }
++      }
++    },
++    "Video memory is how much graphics memory games are told they have. Automatic sizes it from the memory free at launch. Too high can get Madeira closed for using too much memory; too low makes games keep reloading textures." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "显存是告诉游戏它可用的图形内存大小。“自动”会根据启动时的可用内存来设定。设得太高可能导致 Madeira 因占用内存过多而被关闭；太低会让游戏反复重新加载纹理。"
++          }
++        }
++      }
++    },
++    "View" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "视图"
++          }
++        }
++      }
++    },
++    "Wait and sync" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "等待与同步"
++          }
++        }
++      }
++    },
++    "Waiting for LocalDevVPN…" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "正在等待 LocalDevVPN…"
++          }
++        }
++      }
++    },
++    "Waiting for Madeira's JIT helper to attach…" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "正在等待 Madeira 的 JIT 助手附加…"
++          }
++        }
++      }
++    },
++    "Waiting for StikDebug…" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "正在等待 StikDebug…"
++          }
++        }
++      }
++    },
++    "Waiting for your %@…" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "正在等待你的 %@…"
++          }
++        }
++      }
++    },
++    "Welcome to Madeira" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "欢迎使用 Madeira"
++          }
++        }
++      }
++    },
++    "When LocalDevVPN can't reach this device, Enable JIT runs your %@ shortcut: it turns Cellular Data off when there's no Wi-Fi and connects LocalDevVPN, then puts both back once the game has started. Each run opens Shortcuts for a moment." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "当 LocalDevVPN 无法连接到本设备时，“启用 JIT”会运行你的“%@”快捷指令：没有 Wi-Fi 时关闭蜂窝数据并连接 LocalDevVPN，游戏启动后再将两者恢复。每次运行都会短暂打开“快捷指令”。"
++          }
++        }
++      }
++    },
++    "When you start a game with Madeira Dock, Madeira hands this sign-in to Valve's own Steam client, which signs in and checks your license." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "用 Madeira Dock 启动游戏时，Madeira 会把此登录信息交给 Valve 官方的 Steam 客户端，由它登录并检查你的许可。"
++          }
++        }
++      }
++    },
++    "Wine Mono" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Wine Mono"
++          }
++        }
++      }
++    },
++    "Wine Mono is installed." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Wine Mono 已安装。"
++          }
++        }
++      }
++    },
++    "Wine Mono needs about 450 MB of free space while it installs (about 130 MB once installed)." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "安装 Wine Mono 时需要约 450 MB 可用空间（安装后约 130 MB）。"
++          }
++        }
++      }
++    },
++    "Wine Virtual Desktop" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "Wine 虚拟桌面"
++          }
++        }
++      }
++    },
++    "WineHQ answered %@." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "WineHQ 返回了 %@。"
++          }
++        }
++      }
++    },
++    "WineHQ answered %lld." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "WineHQ 返回了 %lld。"
++          }
++        }
++      }
++    },
++    "With the %@ shortcut, Enable JIT connects LocalDevVPN for you, turns Cellular Data off while there's no Wi-Fi, and puts both back, along with any VPN you were using, once the game starts." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "有了“%@”快捷指令，“启用 JIT”会替你连接 LocalDevVPN，在没有 Wi-Fi 时关闭蜂窝数据，并在游戏启动后把两者以及你原来使用的 VPN 一并恢复。"
++          }
++        }
++      }
++    },
++    "Working folder (default: the program's folder)" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "工作文件夹（默认：程序所在文件夹）"
++          }
++        }
++      }
++    },
++    "Working…" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "正在处理…"
++          }
++        }
++      }
++    },
++    "Writing the files failed. Is the storage full?" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "写入文件失败。存储空间是否已满？"
++          }
++        }
++      }
++    },
++    "XInput and DirectInput" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "XInput 和 DirectInput"
++          }
++        }
++      }
++    },
++    "XInput and DirectInput applies to the next launch." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "“XInput 和 DirectInput”在下次启动时生效。"
++          }
++        }
++      }
++    },
++    "XInput and DirectInput: for games older than XInput, which read the pad through DirectInput. The same pad is offered through both APIs, so a game that reads both may list two controllers. Applies to the next launch." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "XInput 和 DirectInput：用于早于 XInput、通过 DirectInput 读取手柄的游戏。同一个手柄会同时通过两种 API 提供，因此同时读取两者的游戏可能会列出两个手柄。下次启动时生效。"
++          }
++        }
++      }
++    },
++    "You can change the JIT method or import a pairing file from Settings › JIT." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "你可以在“设置 › JIT”中更改 JIT 方式或导入配对文件。"
++          }
++        }
++      }
++    },
++    "You can run this setup again from Settings › JIT." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "你可以在“设置 › JIT”中重新运行此设置。"
++          }
++        }
++      }
++    },
++    "You're all set" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "一切就绪"
++          }
++        }
++      }
++    },
++    "Your password goes only to Steam and is never saved." : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "你的密码只会发送给 Steam，绝不会被保存。"
++          }
++        }
++      }
++    },
++    "arm64 DX11 cube" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "arm64 DX11 立方体"
++          }
++        }
++      }
++    },
++    "default %@" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "默认 %@"
++          }
++        }
++      }
++    },
++    "key, or env.NAME" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "键，或 env.NAME"
++          }
++        }
++      }
++    },
++    "x64 DX11 cube" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "x64 DX11 立方体"
++          }
++        }
++      }
++    },
++    "x64 call cost" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "x64 调用开销"
++          }
++        }
++      }
++    },
++    "x64 clock test" : {
++      "localizations" : {
++        "zh-Hans" : {
++          "stringUnit" : {
++            "state" : "translated",
++            "value" : "x64 时钟测试"
++          }
++        }
++      }
++    }
++  }
++}
+diff --git a/app/Madeira/Onboarding.swift b/app/Madeira/Onboarding.swift
+index 26be677..4283a96 100644
+--- a/app/Madeira/Onboarding.swift
++++ b/app/Madeira/Onboarding.swift
+@@ -262,20 +262,20 @@ struct OnboardingView: View {
+         }
+     }
+ 
+-    private func header(_ title: String, symbol: String) -> some View {
++    private func header(_ title: LocalizedStringKey, symbol: String) -> some View {
+         VStack(alignment: .leading, spacing: 14) {
+             Image(systemName: symbol).font(.system(size: 44)).foregroundStyle(.tint).accessibilityHidden(true)
+             Text(title).font(.title.bold()).accessibilityAddTraits(.isHeader)
+         }
+     }
+ 
+-    private func primary(_ title: String, symbol: String, action: @escaping () -> Void) -> some View {
++    private func primary(_ title: LocalizedStringKey, symbol: String, action: @escaping () -> Void) -> some View {
+         Button(action: action) {
+             Label(title, systemImage: symbol).fontWeight(.semibold).frame(maxWidth: .infinity, minHeight: 36)
+         }.buttonStyle(.borderedProminent).controlSize(.large)
+     }
+ 
+-    private func secondary(_ title: String, action: @escaping () -> Void) -> some View {
++    private func secondary(_ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+         Button(title, action: action).frame(maxWidth: .infinity, minHeight: 44)
+     }
+ 
+diff --git a/app/Madeira/WineMono.swift b/app/Madeira/WineMono.swift
+index 457e839..52927e2 100644
+--- a/app/Madeira/WineMono.swift
++++ b/app/Madeira/WineMono.swift
+@@ -83,7 +83,7 @@ enum WineMonoInstaller {
+         var stream = compression_stream(dst_ptr: UnsafeMutablePointer<UInt8>(bitPattern: 1)!, dst_size: 0,
+                                         src_ptr: UnsafePointer<UInt8>(bitPattern: 1)!, src_size: 0, state: nil)
+         guard compression_stream_init(&stream, COMPRESSION_STREAM_DECODE, COMPRESSION_LZMA) == COMPRESSION_STATUS_OK else {
+-            throw WineMonoInstallError.message("The xz decoder could not start.")
++            throw WineMonoInstallError.message(String(localized: "The xz decoder could not start."))
+         }
+         defer { compression_stream_destroy(&stream) }
+ 
+@@ -116,9 +116,9 @@ enum WineMonoInstaller {
+             case COMPRESSION_STATUS_END: finished = true
+             case COMPRESSION_STATUS_OK:
+                 if inputDone && produced == 0 && stream.src_size == 0 {
+-                    throw WineMonoInstallError.message("The download ended early.")
++                    throw WineMonoInstallError.message(String(localized: "The download ended early."))
+                 }
+-            default: throw WineMonoInstallError.message("The download is not a readable xz archive.")
++            default: throw WineMonoInstallError.message(String(localized: "The download is not a readable xz archive."))
+             }
+         }
+         try tar.finish()
+@@ -142,7 +142,7 @@ enum WineMonoInstaller {
+         }
+         data.replaceSubrange(off..<(off + 4), with: WineMonoPin.patchBytes)
+         guard digest(data) == WineMonoPin.mscorlibPatchedSHA256 else {
+-            throw WineMonoInstallError.message("The patched mscorlib.dll does not match the pinned result.")
++            throw WineMonoInstallError.message(String(localized: "The patched mscorlib.dll does not match the pinned result."))
+         }
+         try data.write(to: file, options: .atomic)
+     }
+@@ -189,7 +189,7 @@ private struct TarReader {
+ 
+     mutating func finish() throws {
+         guard remaining == 0, header.isEmpty || header.allSatisfy({ $0 == 0 }) else {
+-            throw WineMonoInstallError.message("The archive ended in the middle of a file.")
++            throw WineMonoInstallError.message(String(localized: "The archive ended in the middle of a file."))
+         }
+         try sink?.close(); sink = nil
+     }
+@@ -202,7 +202,7 @@ private struct TarReader {
+     private func octal(_ start: Int, _ length: Int) throws -> Int64 {
+         let text = field(start, length).trimmingCharacters(in: CharacterSet(charactersIn: " \0"))
+         if text.isEmpty { return 0 }
+-        guard let value = Int64(text, radix: 8) else { throw WineMonoInstallError.message("The archive has a damaged header.") }
++        guard let value = Int64(text, radix: 8) else { throw WineMonoInstallError.message(String(localized: "The archive has a damaged header.")) }
+         return value
+     }
+ 
+@@ -236,7 +236,7 @@ private struct TarReader {
+                 let url = destination.appendingPathComponent(path)
+                 try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+                 guard FileManager.default.createFile(atPath: url.path, contents: nil) else {
+-                    throw WineMonoInstallError.message("Could not write \(path).")
++                    throw WineMonoInstallError.message(String(localized: "Could not write \(path)."))
+                 }
+                 sink = try FileHandle(forWritingTo: url)
+                 files += 1
+@@ -326,7 +326,7 @@ private struct TarReader {
+             var url = root; try url.setResourceValues(values)
+             let free = try root.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]).volumeAvailableCapacityForImportantUsage ?? 0
+             guard free > 450_000_000 else {
+-                error = "Wine Mono needs about 450 MB of free space while it installs (about 130 MB once installed)."
++                error = String(localized: "Wine Mono needs about 450 MB of free space while it installs (about 130 MB once installed).")
+                 return
+             }
+         } catch {
+@@ -340,7 +340,7 @@ private struct TarReader {
+             var moved: Error? = failure
+             if failure == nil, let temp {
+                 if let http = response as? HTTPURLResponse, http.statusCode != 200 {
+-                    moved = WineMonoInstallError.message("WineHQ answered \(http.statusCode).")
++                    moved = WineMonoInstallError.message(String(localized: "WineHQ answered \(http.statusCode)."))
+                 } else {
+                     try? FileManager.default.removeItem(at: archive)
+                     do { try FileManager.default.moveItem(at: temp, to: archive) } catch { moved = error }
+@@ -371,7 +371,7 @@ private struct TarReader {
+             let fm = FileManager.default
+             do {
+                 guard try WineMonoInstaller.sha256(of: archive) == WineMonoPin.tarSHA256 else {
+-                    throw WineMonoInstallError.message("The download does not match the pinned Wine Mono \(WineMonoPin.version).")
++                    throw WineMonoInstallError.message(String(localized: "The download does not match the pinned Wine Mono \(WineMonoPin.version)."))
+                 }
+                 try? fm.removeItem(at: staging)
+                 var last = -1
+-- 
+2.43.0
+

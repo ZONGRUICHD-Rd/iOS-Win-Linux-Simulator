@@ -62,32 +62,73 @@ jobs:
           echo "fex=$(git rev-parse HEAD:FEX)" >> "$GITHUB_OUTPUT"
           echo "wine=$(git rev-parse HEAD:wine)" >> "$GITHUB_OUTPUT"
 
-      - name: Cache LLVM for iOS
-        uses: actions/cache@v4
+      # Each cache is saved as soon as its stage succeeds, so a later failure
+      # does not throw away an hour of LLVM.
+      - name: Restore LLVM for iOS
+        id: llvm-cache
+        uses: actions/cache/restore@v4
         with:
           path: |
             madeira/work/Madeira/toolchains/llvm-project
             madeira/work/Madeira/toolchains/llvm-ios-build/include
             madeira/work/Madeira/toolchains/llvm-ios-build/lib/*.a
-          key: llvm-ios-15.0.7-${{ hashFiles('madeira/ci/build-native.sh') }}
+          key: llvm-ios-15.0.7-v1
 
-      - name: Cache toolchains (GnuTLS, FFmpeg, llvm-mingw)
-        uses: actions/cache@v4
+      - name: Restore toolchains (GnuTLS, FFmpeg, llvm-mingw)
+        id: tc-cache
+        uses: actions/cache/restore@v4
         with:
           path: |
             madeira/work/Madeira/toolchains/gnutls-ios
             madeira/work/Madeira/toolchains/ffmpeg-ios
             madeira/work/Madeira/toolchains/llvm-mingw-*
-          key: toolchains-${{ hashFiles('madeira/UPSTREAM', 'madeira/ci/build-native.sh') }}
+          key: toolchains-v1-${{ hashFiles('madeira/UPSTREAM') }}
 
-      - name: Cache FEX build
-        uses: actions/cache@v4
+      - name: Restore FEX build
+        id: fex-cache
+        uses: actions/cache/restore@v4
         with:
           path: madeira/work/Madeira/FEX/build-ios
-          key: fex-ios-${{ steps.keys.outputs.fex }}
+          key: fex-ios-v1-${{ steps.keys.outputs.fex }}
 
-      - name: Native libraries
-        run: madeira/ci/build-native.sh "$MADEIRA"
+      - name: Native - tools
+        run: madeira/ci/build-native.sh "$MADEIRA" tools
+
+      - name: Native - LLVM 15 for iOS
+        run: madeira/ci/build-native.sh "$MADEIRA" llvm
+      - name: Save LLVM for iOS
+        if: steps.llvm-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            madeira/work/Madeira/toolchains/llvm-project
+            madeira/work/Madeira/toolchains/llvm-ios-build/include
+            madeira/work/Madeira/toolchains/llvm-ios-build/lib/*.a
+          key: llvm-ios-15.0.7-v1
+
+      - name: Native - GnuTLS, FFmpeg, Wine configure
+        run: madeira/ci/build-native.sh "$MADEIRA" gnutls ffmpeg wine-config
+      - name: Save toolchains
+        if: steps.tc-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            madeira/work/Madeira/toolchains/gnutls-ios
+            madeira/work/Madeira/toolchains/ffmpeg-ios
+            madeira/work/Madeira/toolchains/llvm-mingw-*
+          key: toolchains-v1-${{ hashFiles('madeira/UPSTREAM') }}
+
+      - name: Native - FEX
+        run: madeira/ci/build-native.sh "$MADEIRA" fex
+      - name: Save FEX build
+        if: steps.fex-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: madeira/work/Madeira/FEX/build-ios
+          key: fex-ios-v1-${{ steps.keys.outputs.fex }}
+
+      - name: Native - Wine unix side, DXMT, pairing library
+        run: madeira/ci/build-native.sh "$MADEIRA" wine-unix dxmt rppairing extras
 
       - name: Build app (Debug, unsigned)
         run: |

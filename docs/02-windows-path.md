@@ -29,11 +29,12 @@ App 内配对。重写这些要以人年计，而且它在快速迭代。
 5. 设置页里 JIT 和 Memory+ 都是绿勾，Madeira 会显示 “Ready to play”。
 6. 部分 64 位游戏需要 VC++ 运行库，Madeira 不附带（微软许可证），需要自己提供。
 
-**在 LiveContainer 里运行 Madeira**（作者的方式）时，第 2、4 步不同，详见 [06](06-livecontainer.md)：
+**作者的决定（2026-10）：Madeira 直接侧载安装，不放进 LiveContainer。** 这样上面的步骤原样适用：
+内存能力加在 Madeira 自己的 App ID 上，iOS 27 的 App 内配对和内置 StikJIT 都能用，不依赖 StikDebug
+（它在 iOS 27.0 上有附加失败的报告）。LiveContainer 仍可用于其他 App，详见 [06](06-livecontainer.md)。
 
-- 第 2 步：内存能力加在 **LiveContainer 的 App ID** 上，然后重装 LiveContainer。
-- 第 4 步：不能用 In-app 配对（需要 App 扩展）。安装 StikDebug 并导入配对文件；在 LiveContainer 里长按 Madeira →
-  设置 → 载入 JIT 脚本 `madeira-jit.js`（Madeira 仓库 `app/Madeira/`）→ 打开 Launch with JIT。
+本仓库的 Madeira 修改版（导入 zip/7z、去掉 Steam、中文界面、液态玻璃图标）由 GitHub Actions 打包成 IPA，
+见 [madeira/README.md](../madeira/README.md)。安装步骤同上，第 1 步改为从本仓库 Actions 的 `Madeira-ipa` 下载。
 
 注意：开 JIT 时必须在 Wi-Fi 下（或完全断网），蜂窝数据下 LocalDevVPN 的回环不通。
 Madeira 的 “Madeira JIT” 快捷指令可以自动关蜂窝、连 VPN、再恢复。
