@@ -20,7 +20,7 @@ jobs:
     # long macOS build.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Prepare Madeira tree (app sources only)
         run: |
           git init -q work && cd work
@@ -44,7 +44,7 @@ jobs:
       MADEIRA: ${{ github.workspace }}/madeira/work/Madeira
       BUNDLE_ID: io.github.zongruichd.madeira
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Select Xcode 26
         run: |

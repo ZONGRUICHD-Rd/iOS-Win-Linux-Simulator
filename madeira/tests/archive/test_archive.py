@@ -21,7 +21,7 @@ import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 MADEIRA = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else None
-SEVENZ = sys.argv[2] if len(sys.argv) > 2 else shutil.which("7zz") or shutil.which("7z")
+SEVENZ = os.path.abspath(sys.argv[2]) if len(sys.argv) > 2 else shutil.which("7zz") or shutil.which("7z")
 del sys.argv[1:]
 
 # Any two x86-64 binaries of the host (ELF is fine: 7-Zip filters ELF and PE alike).

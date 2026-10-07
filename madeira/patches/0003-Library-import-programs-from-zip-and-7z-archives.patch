@@ -1,0 +1,503 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: iwls <iwls@localhost>
+Date: Wed, 7 Oct 2026 15:25:33 +0000
+Subject: [PATCH] Library: import programs from zip and 7z archives
+
+The library's + is now a menu: Import archive (zip or 7z) or Choose a
+program in drive_c. An archive picked in Files is unpacked by
+MadeiraArchive.c into C:\Programs\<name> (an archive holding a single
+folder becomes that folder), with progress and Cancel. When the archive
+holds one obvious program it is added to the library at once; otherwise a
+list of its executables, installers and uninstallers last, lets the user
+choose, or browse the folder.
+---
+ app/Madeira.xcodeproj/project.pbxproj |  80 +++++++
+ app/Madeira/ArchiveImport.swift       | 299 ++++++++++++++++++++++++++
+ app/Madeira/Library.swift             |  29 ++-
+ app/Madeira/Madeira-Bridging-Header.h |   1 +
+ 4 files changed, 408 insertions(+), 1 deletion(-)
+ create mode 100644 app/Madeira/ArchiveImport.swift
+
+diff --git a/app/Madeira.xcodeproj/project.pbxproj b/app/Madeira.xcodeproj/project.pbxproj
+index 678ed14..9bdea6f 100644
+--- a/app/Madeira.xcodeproj/project.pbxproj
++++ b/app/Madeira.xcodeproj/project.pbxproj
+@@ -7,6 +7,26 @@
+ 	objects = {
+ 
+ /* Begin PBXBuildFile section */
++		C1000001 /* ArchiveImport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000001 /* ArchiveImport.swift */; };
++		C1000002 /* MadeiraArchive.c in Sources */ = {isa = PBXBuildFile; fileRef = C2000002 /* MadeiraArchive.c */; };
++		C1000003 /* 7zAlloc.c in Sources */ = {isa = PBXBuildFile; fileRef = C2000003 /* 7zAlloc.c */; settings = {COMPILER_FLAGS = "-DZ7_PPMD_SUPPORT -w"; }; };
++		C1000004 /* 7zArcIn.c in Sources */ = {isa = PBXBuildFile; fileRef = C2000004 /* 7zArcIn.c */; settings = {COMPILER_FLAGS = "-DZ7_PPMD_SUPPORT -w"; }; };
++		C1000005 /* 7zBuf.c in Sources */ = {isa = PBXBuildFile; fileRef = C2000005 /* 7zBuf.c */; settings = {COMPILER_FLAGS = "-DZ7_PPMD_SUPPORT -w"; }; };
++		C1000006 /* 7zCrc.c in Sources */ = {isa = PBXBuildFile; fileRef = C2000006 /* 7zCrc.c */; settings = {COMPILER_FLAGS = "-DZ7_PPMD_SUPPORT -w"; }; };
++		C1000007 /* 7zCrcOpt.c in Sources */ = {isa = PBXBuildFile; fileRef = C2000007 /* 7zCrcOpt.c */; settings = {COMPILER_FLAGS = "-DZ7_PPMD_SUPPORT -w"; }; };
++		C1000008 /* 7zDec.c in Sources */ = {isa = PBXBuildFile; fileRef = C2000008 /* 7zDec.c */; settings = {COMPILER_FLAGS = "-DZ7_PPMD_SUPPORT -w"; }; };
++		C1000009 /* 7zFile.c in Sources */ = {isa = PBXBuildFile; fileRef = C2000009 /* 7zFile.c */; settings = {COMPILER_FLAGS = "-DZ7_PPMD_SUPPORT -w"; }; };
++		C1000010 /* 7zStream.c in Sources */ = {isa = PBXBuildFile; fileRef = C2000010 /* 7zStream.c */; settings = {COMPILER_FLAGS = "-DZ7_PPMD_SUPPORT -w"; }; };
++		C1000011 /* Bcj2.c in Sources */ = {isa = PBXBuildFile; fileRef = C2000011 /* Bcj2.c */; settings = {COMPILER_FLAGS = "-DZ7_PPMD_SUPPORT -w"; }; };
++		C1000012 /* Bra.c in Sources */ = {isa = PBXBuildFile; fileRef = C2000012 /* Bra.c */; settings = {COMPILER_FLAGS = "-DZ7_PPMD_SUPPORT -w"; }; };
++		C1000013 /* Bra86.c in Sources */ = {isa = PBXBuildFile; fileRef = C2000013 /* Bra86.c */; settings = {COMPILER_FLAGS = "-DZ7_PPMD_SUPPORT -w"; }; };
++		C1000014 /* BraIA64.c in Sources */ = {isa = PBXBuildFile; fileRef = C2000014 /* BraIA64.c */; settings = {COMPILER_FLAGS = "-DZ7_PPMD_SUPPORT -w"; }; };
++		C1000015 /* CpuArch.c in Sources */ = {isa = PBXBuildFile; fileRef = C2000015 /* CpuArch.c */; settings = {COMPILER_FLAGS = "-DZ7_PPMD_SUPPORT -w"; }; };
++		C1000016 /* Delta.c in Sources */ = {isa = PBXBuildFile; fileRef = C2000016 /* Delta.c */; settings = {COMPILER_FLAGS = "-DZ7_PPMD_SUPPORT -w"; }; };
++		C1000017 /* Lzma2Dec.c in Sources */ = {isa = PBXBuildFile; fileRef = C2000017 /* Lzma2Dec.c */; settings = {COMPILER_FLAGS = "-DZ7_PPMD_SUPPORT -w"; }; };
++		C1000018 /* LzmaDec.c in Sources */ = {isa = PBXBuildFile; fileRef = C2000018 /* LzmaDec.c */; settings = {COMPILER_FLAGS = "-DZ7_PPMD_SUPPORT -w"; }; };
++		C1000019 /* Ppmd7.c in Sources */ = {isa = PBXBuildFile; fileRef = C2000019 /* Ppmd7.c */; settings = {COMPILER_FLAGS = "-DZ7_PPMD_SUPPORT -w"; }; };
++		C1000020 /* Ppmd7Dec.c in Sources */ = {isa = PBXBuildFile; fileRef = C2000020 /* Ppmd7Dec.c */; settings = {COMPILER_FLAGS = "-DZ7_PPMD_SUPPORT -w"; }; };
+ 		A1000520 /* MadeiraDock.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000520 /* MadeiraDock.swift */; };
+ 		A1000521 /* MadeiraDockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000521 /* MadeiraDockView.swift */; };
+ 		A1000650 /* DockStartScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000650 /* DockStartScreen.swift */; };
+@@ -173,6 +193,26 @@
+ /* End PBXCopyFilesBuildPhase section */
+ 
+ /* Begin PBXFileReference section */
++		C2000001 /* ArchiveImport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ArchiveImport.swift"; path = "ArchiveImport.swift"; sourceTree = "<group>"; };
++		C2000002 /* MadeiraArchive.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = "MadeiraArchive.c"; path = "Archive/MadeiraArchive.c"; sourceTree = "<group>"; };
++		C2000003 /* 7zAlloc.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = "7zAlloc.c"; path = "Archive/lzma/7zAlloc.c"; sourceTree = "<group>"; };
++		C2000004 /* 7zArcIn.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = "7zArcIn.c"; path = "Archive/lzma/7zArcIn.c"; sourceTree = "<group>"; };
++		C2000005 /* 7zBuf.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = "7zBuf.c"; path = "Archive/lzma/7zBuf.c"; sourceTree = "<group>"; };
++		C2000006 /* 7zCrc.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = "7zCrc.c"; path = "Archive/lzma/7zCrc.c"; sourceTree = "<group>"; };
++		C2000007 /* 7zCrcOpt.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = "7zCrcOpt.c"; path = "Archive/lzma/7zCrcOpt.c"; sourceTree = "<group>"; };
++		C2000008 /* 7zDec.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = "7zDec.c"; path = "Archive/lzma/7zDec.c"; sourceTree = "<group>"; };
++		C2000009 /* 7zFile.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = "7zFile.c"; path = "Archive/lzma/7zFile.c"; sourceTree = "<group>"; };
++		C2000010 /* 7zStream.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = "7zStream.c"; path = "Archive/lzma/7zStream.c"; sourceTree = "<group>"; };
++		C2000011 /* Bcj2.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = "Bcj2.c"; path = "Archive/lzma/Bcj2.c"; sourceTree = "<group>"; };
++		C2000012 /* Bra.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = "Bra.c"; path = "Archive/lzma/Bra.c"; sourceTree = "<group>"; };
++		C2000013 /* Bra86.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = "Bra86.c"; path = "Archive/lzma/Bra86.c"; sourceTree = "<group>"; };
++		C2000014 /* BraIA64.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = "BraIA64.c"; path = "Archive/lzma/BraIA64.c"; sourceTree = "<group>"; };
++		C2000015 /* CpuArch.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = "CpuArch.c"; path = "Archive/lzma/CpuArch.c"; sourceTree = "<group>"; };
++		C2000016 /* Delta.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = "Delta.c"; path = "Archive/lzma/Delta.c"; sourceTree = "<group>"; };
++		C2000017 /* Lzma2Dec.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = "Lzma2Dec.c"; path = "Archive/lzma/Lzma2Dec.c"; sourceTree = "<group>"; };
++		C2000018 /* LzmaDec.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = "LzmaDec.c"; path = "Archive/lzma/LzmaDec.c"; sourceTree = "<group>"; };
++		C2000019 /* Ppmd7.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = "Ppmd7.c"; path = "Archive/lzma/Ppmd7.c"; sourceTree = "<group>"; };
++		C2000020 /* Ppmd7Dec.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = "Ppmd7Dec.c"; path = "Archive/lzma/Ppmd7Dec.c"; sourceTree = "<group>"; };
+ 		A2000520 /* MadeiraDock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MadeiraDock.swift"; sourceTree = "<group>"; };
+ 		A2000521 /* MadeiraDockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MadeiraDockView.swift"; sourceTree = "<group>"; };
+ 		A2000650 /* DockStartScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DockStartScreen.swift"; sourceTree = "<group>"; };
+@@ -386,6 +426,26 @@
+ 		A4000002 /* Madeira */ = {
+ 			isa = PBXGroup;
+ 			children = (
++				C2000001 /* ArchiveImport.swift */,
++				C2000002 /* MadeiraArchive.c */,
++				C2000003 /* 7zAlloc.c */,
++				C2000004 /* 7zArcIn.c */,
++				C2000005 /* 7zBuf.c */,
++				C2000006 /* 7zCrc.c */,
++				C2000007 /* 7zCrcOpt.c */,
++				C2000008 /* 7zDec.c */,
++				C2000009 /* 7zFile.c */,
++				C2000010 /* 7zStream.c */,
++				C2000011 /* Bcj2.c */,
++				C2000012 /* Bra.c */,
++				C2000013 /* Bra86.c */,
++				C2000014 /* BraIA64.c */,
++				C2000015 /* CpuArch.c */,
++				C2000016 /* Delta.c */,
++				C2000017 /* Lzma2Dec.c */,
++				C2000018 /* LzmaDec.c */,
++				C2000019 /* Ppmd7.c */,
++				C2000020 /* Ppmd7Dec.c */,
+ 				A2000520 /* MadeiraDock.swift */,
+ 				A2000521 /* MadeiraDockView.swift */,
+ 				A2000650 /* DockStartScreen.swift */,
+@@ -713,6 +773,26 @@
+ 			isa = PBXSourcesBuildPhase;
+ 			buildActionMask = 2147483647;
+ 			files = (
++				C1000001 /* ArchiveImport.swift in Sources */,
++				C1000002 /* MadeiraArchive.c in Sources */,
++				C1000003 /* 7zAlloc.c in Sources */,
++				C1000004 /* 7zArcIn.c in Sources */,
++				C1000005 /* 7zBuf.c in Sources */,
++				C1000006 /* 7zCrc.c in Sources */,
++				C1000007 /* 7zCrcOpt.c in Sources */,
++				C1000008 /* 7zDec.c in Sources */,
++				C1000009 /* 7zFile.c in Sources */,
++				C1000010 /* 7zStream.c in Sources */,
++				C1000011 /* Bcj2.c in Sources */,
++				C1000012 /* Bra.c in Sources */,
++				C1000013 /* Bra86.c in Sources */,
++				C1000014 /* BraIA64.c in Sources */,
++				C1000015 /* CpuArch.c in Sources */,
++				C1000016 /* Delta.c in Sources */,
++				C1000017 /* Lzma2Dec.c in Sources */,
++				C1000018 /* LzmaDec.c in Sources */,
++				C1000019 /* Ppmd7.c in Sources */,
++				C1000020 /* Ppmd7Dec.c in Sources */,
+ 				A1000520 /* MadeiraDock.swift in Sources */,
+ 				A1000521 /* MadeiraDockView.swift in Sources */,
+ 				A1000650 /* DockStartScreen.swift in Sources */,
+diff --git a/app/Madeira/ArchiveImport.swift b/app/Madeira/ArchiveImport.swift
+new file mode 100644
+index 0000000..a8d71d4
+--- /dev/null
++++ b/app/Madeira/ArchiveImport.swift
+@@ -0,0 +1,299 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++// Madeira Converter Exception: see LICENSE-EXCEPTION.md
++//
++// Importing a Windows program packed as a .zip or .7z archive: the library's +
++// menu picks the archive in Files, MadeiraArchive.c extracts it into
++// drive_c/Programs/<name>, and the program's executable becomes a library
++// entry (found on its own when there is one obvious choice, otherwise picked
++// from a list).
++
++import os
++import SwiftUI
++import UniformTypeIdentifiers
++
++enum ArchiveImport {
++    static let types: [UTType] = [.zip, UTType(filenameExtension: "7z") ?? .data]
++
++    /// Imported programs live here, as C:\Programs\<name>.
++    static var programs: URL { LibraryModel.drive.appendingPathComponent("Programs", isDirectory: true) }
++
++    struct Failure: LocalizedError {
++        let code: Int
++        let detail: String
++        var errorDescription: String? {
++            let text: String
++            switch code {
++            case Int(MA_ERR_OPEN): text = String(localized: "The archive could not be read.")
++            case Int(MA_ERR_FORMAT): text = String(localized: "This is not a zip or 7z archive, or the archive is damaged.")
++            case Int(MA_ERR_UNSUPPORTED): text = String(localized: "The archive uses a compression method Madeira cannot unpack, or its file names are encrypted.")
++            case Int(MA_ERR_ENCRYPTED): text = String(localized: "The archive is password-protected. Unpack it on a computer and pack it again without a password.")
++            case Int(MA_ERR_WRITE): text = String(localized: "Writing the files failed. Is the storage full?")
++            case Int(MA_ERR_UNSAFE_PATH): text = String(localized: "The archive contains a file that would be written outside its folder, so it was not imported.")
++            case Int(MA_ERR_NOMEM): text = String(localized: "There was not enough memory to unpack the archive.")
++            case Int(MA_ERR_CRC): text = String(localized: "The archive is damaged: a file does not match its checksum.")
++            case Int(MA_ERR_TOO_LARGE): text = String(localized: "This 7z archive needs more memory to unpack than is available. Pack it again as a zip, or as a 7z with a smaller dictionary.")
++            default: text = String(localized: "Unpacking failed.")
++            }
++            return detail.isEmpty ? text : "\(text)\n(\(detail))"
++        }
++    }
++
++    struct Cancelled: Error {}
++
++    private final class ProgressBox {
++        let report: (Double) -> Bool
++        init(_ report: @escaping (Double) -> Bool) { self.report = report }
++    }
++
++    /// Unpacks `archive` into a new folder under Programs and returns it.
++    /// `progress` gets 0...1 and returns false to cancel. Runs on the calling
++    /// thread; call it off the main thread.
++    static func extract(_ archive: URL, progress: @escaping (Double) -> Bool) throws -> URL {
++        let fm = FileManager.default
++        try fm.createDirectory(at: programs, withIntermediateDirectories: true)
++        let staging = programs.appendingPathComponent(".importing-\(UUID().uuidString)", isDirectory: true)
++        try fm.createDirectory(at: staging, withIntermediateDirectories: true)
++        var keep = false
++        defer { if !keep { try? fm.removeItem(at: staging) } }
++
++        let box = ProgressBox(progress)
++        let ctx = Unmanaged.passRetained(box).toOpaque()
++        defer { Unmanaged<ProgressBox>.fromOpaque(ctx).release() }
++        var detail = [CChar](repeating: 0, count: 512)
++        // A block that cannot be streamed may take up to about half of what is
++        // left to this app; LZMA dictionaries always get at least 256 MB.
++        let available = UInt64(os_proc_available_memory())
++        let limit = available > 0 ? available / 2 : 0
++        let rc = ma_extract(archive.path, staging.path, limit, { ctx, done, total in
++            guard let ctx else { return 0 }
++            let box = Unmanaged<ProgressBox>.fromOpaque(ctx).takeUnretainedValue()
++            return box.report(total > 0 ? Double(done) / Double(total) : 0) ? 0 : 1
++        }, ctx, &detail, detail.count)
++        if Int(rc) == Int(MA_ERR_CANCELLED) { throw Cancelled() }
++        guard Int(rc) == Int(MA_OK) else {
++            throw Failure(code: Int(rc), detail: String(cString: detail))
++        }
++
++        // An archive holding one folder (the usual "Game/..." layout) becomes
++        // that folder; anything else becomes a folder named after the archive.
++        let top = (try? fm.contentsOfDirectory(at: staging, includingPropertiesForKeys: [.isDirectoryKey],
++                                               options: .skipsHiddenFiles)) ?? []
++        let source: URL, name: String
++        if top.count == 1, top[0].hasDirectoryPath {
++            source = top[0]; name = top[0].lastPathComponent
++        } else {
++            source = staging; name = archive.deletingPathExtension().lastPathComponent
++        }
++        let target = uniqueFolder(named: name)
++        try fm.moveItem(at: source, to: target)
++        if source != staging { try? fm.removeItem(at: staging) } else { keep = true }
++        return target
++    }
++
++    private static func uniqueFolder(named raw: String) -> URL {
++        let name = raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Program" : raw
++        var url = programs.appendingPathComponent(name, isDirectory: true)
++        var n = 2
++        while FileManager.default.fileExists(atPath: url.path) {
++            url = programs.appendingPathComponent("\(name) \(n)", isDirectory: true)
++            n += 1
++        }
++        return url
++    }
++
++    /// Words in file names that mark an executable as something other than the
++    /// program itself: installers, uninstallers, redistributables, crash handlers.
++    private static let helperWords = ["unins", "uninst", "setup", "install", "vcredist", "vc_redist", "dxsetup",
++                                      "directx", "dotnet", "ndp4", "redist", "crashhandler", "crashreport",
++                                      "crashpad", "updater", "update", "prereq", "launcherhelper", "bugreport",
++                                      "cefprocess", "webhelper", "helper"]
++
++    struct Candidate: Identifiable {
++        let url: URL
++        let relative: String
++        let likelyHelper: Bool
++        var id: String { relative }
++    }
++
++    /// The programs and batch files in `folder`, the likeliest first: not a
++    /// helper, an .exe, near the top, the largest.
++    static func candidates(in folder: URL) -> [Candidate] {
++        let fm = FileManager.default
++        guard let walker = fm.enumerator(at: folder, includingPropertiesForKeys: [.fileSizeKey, .isRegularFileKey],
++                                         options: [.skipsHiddenFiles]) else { return [] }
++        var found: [(Candidate, depth: Int, size: Int, exe: Bool)] = []
++        for case let url as URL in walker {
++            let ext = url.pathExtension.lowercased()
++            guard LibraryModel.programExtensions.contains(ext) else { continue }
++            let relative = String(url.path.dropFirst(folder.path.count + 1))
++            let lower = url.lastPathComponent.lowercased()
++            let helper = helperWords.contains { lower.contains($0) }
++            let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
++            found.append((Candidate(url: url, relative: relative, likelyHelper: helper),
++                          relative.split(separator: "/").count, size, ext == "exe"))
++        }
++        return found.sorted { a, b in
++            if a.0.likelyHelper != b.0.likelyHelper { return !a.0.likelyHelper }
++            if a.exe != b.exe { return a.exe }
++            if a.depth != b.depth { return a.depth < b.depth }
++            return a.size > b.size
++        }.map(\.0)
++    }
++}
++
++/// Set on the main thread, read by the extraction thread.
++final class ImportCancelFlag: @unchecked Sendable {
++    private let lock = NSLock()
++    private var value = false
++    var isSet: Bool { lock.lock(); defer { lock.unlock() }; return value }
++    func set() { lock.lock(); value = true; lock.unlock() }
++}
++
++/// The state of one import, shown over the library.
++@MainActor
++final class ArchiveImporter: ObservableObject {
++    enum Phase {
++        case idle
++        case extracting(name: String, progress: Double)
++        case choosing(folder: URL, candidates: [ArchiveImport.Candidate])
++    }
++    @Published var phase: Phase = .idle
++    @Published var error: String?
++    private var cancelFlag = ImportCancelFlag()
++
++    var isActive: Bool { if case .idle = phase { return false } else { return true } }
++
++    func start(_ archive: URL, save: @escaping (LibraryEntry) -> Void) {
++        guard !isActive else { return }
++        let flag = ImportCancelFlag()
++        cancelFlag = flag
++        let name = archive.lastPathComponent
++        phase = .extracting(name: name, progress: 0)
++        Task.detached(priority: .userInitiated) { [weak self] in
++            let scoped = archive.startAccessingSecurityScopedResource()
++            defer { if scoped { archive.stopAccessingSecurityScopedResource() } }
++            var lastShown = -1.0
++            let result: Result<URL, Error>
++            // Reading through a file coordinator downloads an iCloud archive first.
++            var coordinationError: NSError?
++            var extracted: Result<URL, Error> = .failure(ArchiveImport.Failure(code: Int(MA_ERR_OPEN), detail: ""))
++            NSFileCoordinator().coordinate(readingItemAt: archive, options: [], error: &coordinationError) { url in
++                extracted = Result {
++                    try ArchiveImport.extract(url) { fraction in
++                        if fraction - lastShown >= 0.01 || fraction >= 1 {
++                            lastShown = fraction
++                            Task { @MainActor [weak self] in
++                                if case .extracting = self?.phase { self?.phase = .extracting(name: name, progress: fraction) }
++                            }
++                        }
++                        return !flag.isSet
++                    }
++                }
++            }
++            if let coordinationError { result = .failure(coordinationError) } else { result = extracted }
++            await self?.finish(result, save: save)
++        }
++    }
++
++    func cancel() { cancelFlag.set() }
++
++    private func finish(_ result: Result<URL, Error>, save: @escaping (LibraryEntry) -> Void) {
++        switch result {
++        case .failure(let error):
++            phase = .idle
++            if !(error is ArchiveImport.Cancelled) { self.error = error.localizedDescription }
++        case .success(let folder):
++            let list = ArchiveImport.candidates(in: folder)
++            let programs = list.filter { !$0.likelyHelper && $0.url.pathExtension.lowercased() == "exe" }
++            if programs.count == 1, let entry = try? Self.entry(for: programs[0].url, in: folder) {
++                phase = .idle
++                save(entry)
++            } else if list.isEmpty {
++                phase = .idle
++                error = String(localized: "The archive was unpacked to C:\\Programs\\\(folder.lastPathComponent), but it contains no .exe, .bat or .cmd file.")
++            } else {
++                phase = .choosing(folder: folder, candidates: list)
++            }
++        }
++    }
++
++    /// The library entry for `exe`, titled after its folder.
++    static func entry(for exe: URL, in folder: URL) throws -> LibraryEntry {
++        var entry = try LibraryModel.inspect(exe)
++        entry.title = folder.lastPathComponent
++        return entry
++    }
++
++    func choose(_ candidate: ArchiveImport.Candidate, folder: URL, save: (LibraryEntry) -> Void) {
++        do {
++            save(try Self.entry(for: candidate.url, in: folder))
++            phase = .idle
++        } catch {
++            self.error = error.localizedDescription
++        }
++    }
++
++    func dismissChoice() { phase = .idle }
++}
++
++/// Unpacking progress, over the library while an import runs.
++struct ArchiveImportProgress: View {
++    @ObservedObject var importer: ArchiveImporter
++    var body: some View {
++        if case .extracting(let name, let progress) = importer.phase {
++            VStack(spacing: 14) {
++                Label("Unpacking", systemImage: "archivebox").font(.headline)
++                Text(name).font(.subheadline).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
++                ProgressView(value: progress).frame(width: 240)
++                Text(progress, format: .percent.precision(.fractionLength(0))).monospacedDigit().foregroundStyle(.secondary)
++                Button("Cancel", role: .cancel) { importer.cancel() }
++            }
++            .padding(24)
++            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24))
++            .shadow(radius: 20)
++        }
++    }
++}
++
++/// Picking the executable after an import that has more than one candidate.
++struct ArchiveProgramPicker: View {
++    let folder: URL
++    let candidates: [ArchiveImport.Candidate]
++    var choose: (ArchiveImport.Candidate) -> Void
++    /// An executable chosen by browsing the unpacked folder.
++    var browseSelect: (LibraryEntry) -> Void
++    var cancel: () -> Void
++    var body: some View {
++        NavigationStack {
++            List {
++                Section {
++                    ForEach(candidates) { c in
++                        Button { choose(c) } label: {
++                            Label {
++                                VStack(alignment: .leading, spacing: 2) {
++                                    Text(c.url.lastPathComponent)
++                                    Text(c.relative).font(.caption).foregroundStyle(.secondary)
++                                }
++                            } icon: {
++                                Image(systemName: c.likelyHelper ? "gearshape" : c.url.pathExtension.lowercased() == "exe" ? "app.dashed" : "terminal")
++                            }
++                        }
++                    }
++                } footer: {
++                    Text("Unpacked to C:\\Programs\\\(folder.lastPathComponent). Installers and uninstallers are listed last.")
++                }
++                Section {
++                    NavigationLink {
++                        ExecutableBrowser(folder: folder) { entry in
++                            var entry = entry
++                            entry.title = folder.lastPathComponent
++                            browseSelect(entry)
++                        }
++                    } label: { Label("Browse all files", systemImage: "folder") }
++                }
++            }
++            .navigationTitle("Choose the program")
++            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Later", action: cancel) } }
++        }
++    }
++}
+diff --git a/app/Madeira/Library.swift b/app/Madeira/Library.swift
+index d6b136f..d810bad 100644
+--- a/app/Madeira/Library.swift
++++ b/app/Madeira/Library.swift
+@@ -2395,6 +2395,9 @@ struct LibraryView: View {
+         jit.connectionProblem.flatMap { model.error == $0.message ? $0 : nil }
+     }
+     @State private var browser = false
++    /// Importing a program from a zip/7z archive (ArchiveImport.swift).
++    @State private var importArchive = false
++    @StateObject private var importer = ArchiveImporter()
+     @State private var selected: LibraryEntry?
+     @State private var search = ""
+     /// The Settings tab's own search text, kept apart from the library's.
+@@ -2524,7 +2527,13 @@ struct LibraryView: View {
+                 }
+             } label: { Label("Library options", systemImage: "line.3.horizontal.decrease") }
+         }
+-        ToolbarItem(placement: .topBarTrailing) { Button { browser = true } label: { Label("Add executable", systemImage: "plus") } }
++        ToolbarItem(placement: .topBarTrailing) {
++            Menu {
++                Button("Import archive (zip or 7z)", systemImage: "archivebox") { importArchive = true }
++                Button("Choose a program in drive_c", systemImage: "folder") { browser = true }
++            } label: { Label("Add program", systemImage: "plus") }
++            .disabled(importer.isActive)
++        }
+     }
+     @ToolbarContentBuilder private var settingsToolbar: some ToolbarContent {
+         ToolbarItem(placement: .topBarTrailing) {
+@@ -2730,6 +2739,24 @@ struct LibraryView: View {
+                 model.save(entry); browser = false; selected = entry
+             } }
+         }
++        .fileImporter(isPresented: $importArchive, allowedContentTypes: ArchiveImport.types) { result in
++            if case .success(let url) = result {
++                importer.start(url) { entry in model.save(entry); selected = entry }
++            }
++        }
++        .overlay { ArchiveImportProgress(importer: importer) }
++        .sheet(isPresented: Binding(get: { if case .choosing = importer.phase { return true } else { return false } },
++                                    set: { if !$0 { importer.dismissChoice() } })) {
++            if case .choosing(let folder, let candidates) = importer.phase {
++                ArchiveProgramPicker(folder: folder, candidates: candidates,
++                                     choose: { importer.choose($0, folder: folder) { model.save($0) } },
++                                     browseSelect: { entry in model.save(entry); importer.dismissChoice() },
++                                     cancel: { importer.dismissChoice() })
++            }
++        }
++        .alert("Import failed", isPresented: Binding(get: { importer.error != nil }, set: { if !$0 { importer.error = nil } })) {
++            Button("OK", role: .cancel) {}
++        } message: { Text(importer.error ?? "") }
+         .sheet(item: $selected) { entry in
+             // The details page stays up until the session's starting screen takes
+             // over (or an error needs the library's alert), instead of showing the
+diff --git a/app/Madeira/Madeira-Bridging-Header.h b/app/Madeira/Madeira-Bridging-Header.h
+index b9bf561..94ef4c7 100644
+--- a/app/Madeira/Madeira-Bridging-Header.h
++++ b/app/Madeira/Madeira-Bridging-Header.h
+@@ -73,3 +73,4 @@ int madeira_d3d12_canary_run(const char *fixture_dir, const char *dylib_path,
+ int madeira_d3d12_canary_run_log(const char *fixture_dir, const char *dylib_path,
+                                  void (*sink)(const char *), const char *log_path,
+                                  const char *build_id);
++#import "Archive/MadeiraArchive.h"
+-- 
+2.43.0
+

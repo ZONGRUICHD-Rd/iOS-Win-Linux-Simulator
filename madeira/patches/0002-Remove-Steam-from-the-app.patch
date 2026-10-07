@@ -1,0 +1,104 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: iwls <iwls@localhost>
+Date: Wed, 7 Oct 2026 15:25:33 +0000
+Subject: [PATCH] Remove Steam from the app
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This fork imports Windows programs from archives instead of installing
+Steam games. Steam sign-in and Madeira Dock are switched off at their
+gates (SteamSignIn.isEnabled, MadeiraDock.enabled), which hides the Steam
+library section, Settings › Steam, the onboarding steps, Steam Cloud and
+downloads, all of which follow them. The game details' Find on Steam cover
+search and the developer interface's Steam test button are removed too.
+The Steam code stays in the tree, unused, to keep the patch small.
+---
+ app/Madeira/ContentView.swift            | 3 +++
+ app/Madeira/Library.swift                | 1 -
+ app/Madeira/MadeiraDock.swift            | 5 +++--
+ app/Madeira/Onboarding.swift             | 2 +-
+ app/Madeira/SwiftSteam/SteamSignIn.swift | 5 +++--
+ 5 files changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/app/Madeira/ContentView.swift b/app/Madeira/ContentView.swift
+index 36c6c88..72a0a4d 100644
+--- a/app/Madeira/ContentView.swift
++++ b/app/Madeira/ContentView.swift
+@@ -1677,6 +1677,8 @@ struct ContentView: View {
+                 }
+                 .buttonStyle(.borderedProminent)
+ 
++                // The developer interface's Steam bring-up test; this fork has no Steam.
++                if SteamSignIn.isEnabled {
+                 Button("Steam Testing") {
+                     // Steam S3 first boot: virtual desktop (Steam needs a
+                     // window manager) + services.exe (SCM → rpcss for Steam's
+@@ -1945,6 +1947,7 @@ struct ContentView: View {
+                 }
+                 .buttonStyle(.borderedProminent)
+                 .tint(.green)
++                }
+ 
+                 resolutionPicker
+ 
+diff --git a/app/Madeira/Library.swift b/app/Madeira/Library.swift
+index 7b22ca3..d6b136f 100644
+--- a/app/Madeira/Library.swift
++++ b/app/Madeira/Library.swift
+@@ -2943,7 +2943,6 @@ struct LibraryDetail: View {
+                 }
+                 if entry.desktop != true { Section("Library details") {
+                     TextField("Title", text: $entry.title)
+-                    Button("Find on Steam", systemImage: "magnifyingglass") { findCover = true }
+                     Button("Choose cover image", systemImage: "photo") { importCover = true }
+                     if entry.coverFile != nil { Button((entry.steamAppID ?? entry.steamID) != nil ? "Use Steam artwork" : "Remove cover image") { entry.coverFile = nil } }
+                 } }
+diff --git a/app/Madeira/MadeiraDock.swift b/app/Madeira/MadeiraDock.swift
+index c5c2dba..5ed751d 100644
+--- a/app/Madeira/MadeiraDock.swift
++++ b/app/Madeira/MadeiraDock.swift
+@@ -54,8 +54,9 @@ struct DockGame: Identifiable, Equatable, Sendable {
+ /// The app side is this contract: environment variables, a one-use sign-in
+ /// transfer file and a numeric report file (C:\madeira-dock.txt).
+ enum MadeiraDock {
+-    /// `env.MADEIRA_DOCK = 0` hides Dock. Without a built dockhost.exe it is hidden too.
+-    static var enabled: Bool { SteamSignIn.flag("MADEIRA_DOCK", default: true) && bundled }
++    /// Off in this fork, which has no Steam; the Steam library, cloud saves and
++    /// downloads (SteamOwnedLibrary.enabled) follow it.
++    static var enabled: Bool { false }
+     static var bundled: Bool {
+         Bundle.main.url(forResource: "dockhost", withExtension: "exe", subdirectory: "arm64ec-windows") != nil
+     }
+diff --git a/app/Madeira/Onboarding.swift b/app/Madeira/Onboarding.swift
+index f399b71..26be677 100644
+--- a/app/Madeira/Onboarding.swift
++++ b/app/Madeira/Onboarding.swift
+@@ -668,7 +668,7 @@ struct OnboardingView: View {
+             if model.steps.contains(.wineMono) {
+                 Text("Settings › .NET Framework downloads or removes Wine Mono.")
+             }
+-            Text("You can run this setup again from Settings › JIT or Settings › Steam.").foregroundStyle(.secondary)
++            Text("You can run this setup again from Settings › JIT.").foregroundStyle(.secondary)
+             primary("Go to your library", symbol: "square.grid.2x2.fill") { model.finish() }
+         }
+     }
+diff --git a/app/Madeira/SwiftSteam/SteamSignIn.swift b/app/Madeira/SwiftSteam/SteamSignIn.swift
+index 58ac043..a5f4eec 100644
+--- a/app/Madeira/SwiftSteam/SteamSignIn.swift
++++ b/app/Madeira/SwiftSteam/SteamSignIn.swift
+@@ -25,8 +25,9 @@ enum SteamSignIn {
+         return value.trimmingCharacters(in: .whitespaces) != "0"
+     }
+ 
+-    /// `env.MADEIRA_STEAM_SIGNIN = 0` hides the sign-in button.
+-    static var isEnabled: Bool { flag("MADEIRA_STEAM_SIGNIN", default: true) }
++    /// This fork has no Steam: programs are imported as zip/7z archives
++    /// (ArchiveImport.swift), so sign-in is never offered.
++    static var isEnabled: Bool { false }
+ 
+     static var isSignedIn: Bool { credentialsForDock() != nil }
+ 
+-- 
+2.43.0
+
