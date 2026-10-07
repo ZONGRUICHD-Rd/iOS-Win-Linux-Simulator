@@ -6,7 +6,8 @@
 
 一个极小的探针 App，一次性测出 [01](01-platform-iphone18pro-ios27.md) 中所有 “待实测” 项，输出 JSON 报告提交到 `reports/`。
 
-- [ ] 授权：increased-memory-limit、extended-virtual-addressing（免费账号能否加上）
+- [x] 授权：increased-memory-limit 免费账号可加（作者用 GetMoreRam 实测，2026-10）
+- [ ] 授权：extended-virtual-addressing 免费账号能否加上（测试方法见 docs/01 第 4 节）
 - [ ] `os_proc_available_memory()` 实际值
 - [ ] 地址空间上限（63 GB / 512 GB），能否预留 `0x400000`、`0x140000000`
 - [ ] 内置 StikJIT 在 iOS 27 上准备 256 MiB / 1 GiB / 2 GiB 区域的耗时与成功率

@@ -32,11 +32,13 @@ AppleAPI.shared.updateAppID(appID, capabilities: ["INCREASED_MEMORY_LIMIT"], tea
 
 **要点**
 
-- 免费账号也能给 App ID 加这个能力。这正是 Madeira 设置页里 “Memory+” 绿勾的来源。
+- 免费账号也能给 App ID 加这个能力，**项目作者已用免费账号实测成功（2026-10）**。这正是 Madeira 设置页里 “Memory+” 绿勾的来源。
 - 另一个同样关键的授权是 `com.apple.developer.kernel.extended-virtual-addressing`。没有它，
   用户态地址空间到 `0xfc0000000`（63 GB）为止；有了它可到 512 GB（Madeira `EntitlementChecker.swift`
   里有记录）。这对 Linux 方向的多进程设计至关重要（见 [03](03-linux-path.md)）。
-  **免费账号能不能通过同样的 API 加上它，尚未验证**，这是 P0 阶段的待测项。
+  GetMoreRam 只申请 `INCREASED_MEMORY_LIMIT`（代码里写死），所以上面的实测 **不涵盖** 它。
+  它的能力 ID 是 `EXTENDED_VIRTUAL_ADDRESSING`（StosSign 里已有常量 `capabilityExtendedVirtualAddressing`），
+  **免费账号能不能加上，尚未验证**。测试方法见 [01](01-platform-iphone18pro-ios27.md#4-内存与地址空间)。
 - 本项目可以直接内置同样的能力（StosSign 方式），而不是让用户再装一个 App。
 
 ## 2. StikDebug

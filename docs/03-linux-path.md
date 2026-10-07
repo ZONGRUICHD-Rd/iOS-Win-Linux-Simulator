@@ -89,6 +89,8 @@ Debian arm64 ELF（原样，不重编译）
 - 每个 Linux 进程最多 4 GiB 地址空间（手机上够用）。
 - 槽位数受地址空间限制：63 GB 时约 10 个以内（还要给 iOS 自己留空间），512 GB（extended-virtual-addressing）时上百个。
   **所以 extended-virtual-addressing 能否用免费账号获得，直接决定 B2 能同时跑多少进程。**
+  若免费账号拿不到：槽位可以从 4 GiB 缩小（LFI 的设计允许更小的槽，代价是每个进程能用的内存更少），
+  或者让不活跃的进程换出到文件，腾出槽位。
 - 槽位之间的隔离只是 “不会意外踩到”，不作为安全边界承诺（Spectre 等不在范围内）。
 
 ### C. x86-64 Linux 程序：FEXCore

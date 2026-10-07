@@ -49,8 +49,20 @@ Hypervisor.framework 不对第三方 iOS App 开放（需要 `com.apple.private.
 
 | 授权 | 作用 | 获取 |
 |---|---|---|
-| `com.apple.developer.kernel.increased-memory-limit` | 提高 jetsam 上限 | 免费账号可加（GetMoreRam 方式）**已确认** |
+| `com.apple.developer.kernel.increased-memory-limit` | 提高 jetsam 上限 | 免费账号可加（GetMoreRam 方式）**已实测** |
 | `com.apple.developer.kernel.extended-virtual-addressing` | 用户地址空间 63 GB → 512 GB | 免费账号能否加 **待实测** |
+
+**测试 extended-virtual-addressing**（不需要写新代码）：
+
+1. 把 GetMoreRam 的 `AppIDViewModel.swift` 里那一行改成
+   `capabilities: ["INCREASED_MEMORY_LIMIT", "EXTENDED_VIRTUAL_ADDRESSING"]`，自己编译侧载；
+   或者用任何能按 ID 打开 App ID 能力的工具。服务器拒绝时会直接返回错误，这本身就是答案。
+2. 若服务器接受，从侧载工具 **重新安装** Madeira。
+3. 看 Madeira 的诊断日志（`DeviceDiagnostics`，启动时写入），其中有两项：
+   - `profile-extended-va=1`：描述文件里确实带上了授权；
+   - `address-map=[...) 512GB`：内核确实给了扩展地址空间（没有时是 `63GB`）。
+
+两项都满足才算成功。注意 Apple 可能只在付费账号上开放这个能力（网上有 “需要付费证书” 的说法，未经证实）。
 
 另外：
 
