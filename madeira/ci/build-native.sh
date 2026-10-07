@@ -152,7 +152,7 @@ stage_wine_unix() {
 
 stage_dxmt() {
     say "dxmt unix side"
-    bash "$M/build/dxmt-ios/build.sh"
+    bash "$M/build/dxmt-ios/build.sh" || { show_errors dxmt-ios; exit 1; }
     # The app links libdxmt_combined.a: DXMT's objects plus the LLVM archives
     # airconv needs, merged into one archive.
     local libs=() l
@@ -164,6 +164,14 @@ stage_dxmt() {
 stage_fex() {
     say "FEX for iOS"
     bash "$M/build/fex-ios/build.sh"
+    # The app also links these archives, which the FEXCore targets do not build.
+    local b="$M/FEX/build-ios" a
+    cmake --build "$b" --target JemallocLibs softfloat_3e cephes_128bit fmt xxhash
+    for a in FEXCore/Source/libFEXCore.a FEXCore/Source/libFEXCore_Base.a FEXCore/Source/libJemallocLibs.a \
+        External/SoftFloat-3e/libsoftfloat_3e.a External/cephes/libcephes_128bit.a External/fmt/libfmt.a \
+        External/xxhash/cmake_unofficial/libxxhash.a; do
+        [ -f "$b/$a" ] || { echo "error: FEX/build-ios/$a was not produced"; exit 1; }
+    done
 }
 
 stage_rppairing() {
