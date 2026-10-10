@@ -1,0 +1,75 @@
+name: Metal Test IPA
+
+# Builds metal-test/ (a small SwiftUI + Metal 3D demo, iOS 26) into an
+# unsigned / ad-hoc signed IPA. Re-sign it with your own tool before installing.
+
+on:
+  push:
+    paths:
+      - "metal-test/**"
+      - ".github/workflows/metal-test-ipa.yml"
+  pull_request:
+    paths:
+      - "metal-test/**"
+      - ".github/workflows/metal-test-ipa.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: metal-test-ipa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ipa:
+    runs-on: macos-26
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: metal-test
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Select Xcode 26
+        run: |
+          XCODE="$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)"
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+          # Xcode 26 ships the Metal compiler as a separate component.
+          xcrun -sdk iphoneos metal --version >/dev/null 2>&1 || xcodebuild -downloadComponent MetalToolchain
+
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Build (Release, unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild -project MetalTest.xcodeproj -scheme MetalTest -configuration Release \
+            -destination 'generic/platform=iOS' -derivedDataPath "$RUNNER_TEMP/dd" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY= \
+            build | tee "$RUNNER_TEMP/xcodebuild.log" | grep -E "error:|warning:|BUILD (SUCCEEDED|FAILED)" || true
+          grep -q "BUILD SUCCEEDED" "$RUNNER_TEMP/xcodebuild.log"
+
+      - name: Package IPA
+        run: |
+          APP="$RUNNER_TEMP/dd/Build/Products/Release-iphoneos/MetalTest.app"
+          test -f "$APP/default.metallib"
+          codesign --force --sign - --timestamp=none "$APP"
+          mkdir -p "$RUNNER_TEMP/ipa/Payload"
+          cp -R "$APP" "$RUNNER_TEMP/ipa/Payload/"
+          (cd "$RUNNER_TEMP/ipa" && zip -qry "$GITHUB_WORKSPACE/MetalTest.ipa" Payload)
+          ls -lh "$GITHUB_WORKSPACE/MetalTest.ipa"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MetalTest-ipa
+          path: MetalTest.ipa
+          if-no-files-found: error
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: metal-test-xcodebuild-log
+          path: ${{ runner.temp }}/xcodebuild.log
+          if-no-files-found: ignore

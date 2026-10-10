@@ -1,0 +1,24 @@
+name: MetalTest
+options:
+  bundleIdPrefix: io.github.zongruichd
+  deploymentTarget:
+    iOS: "26.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  MetalTest:
+    type: application
+    platform: iOS
+    sources:
+      - path: MetalTest
+    settings:
+      base:
+        PRODUCT_NAME: MetalTest
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.zongruichd.metaltest
+        INFOPLIST_FILE: Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        TARGETED_DEVICE_FAMILY: "1,2"
+        MTL_FAST_MATH: YES
